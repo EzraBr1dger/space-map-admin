@@ -7,7 +7,6 @@ const path = require('path');
 
 // Import routes
 const authRoutes = require('./routes/auth');
-const planetRoutes = require('./routes/planets');
 const supplyRoutes = require('./routes/supplies');
 const statsRoutes = require('./routes/stats');
 const announcementRoutes = require('./routes/announcements');
@@ -58,7 +57,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // API Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/planets', planetRoutes);
 app.use('/api/supplies', supplyRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/announcements', announcementRoutes);

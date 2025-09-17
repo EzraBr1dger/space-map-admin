@@ -426,24 +426,10 @@
             <!-- Management Section -->
             <div class="management-section">
                 <div class="tabs">
-                    <button class="tab active" onclick="switchTab('planets')">🌍 Planets</button>
-                    <button class="tab" onclick="switchTab('supplies')">📦 Supplies</button>
-                    <button class="tab" onclick="switchTab('mapdata')">🗺️ Map Data</button> <!-- NEW TAB -->
-                    <button class="tab" onclick="switchTab('actions')">⚡ Actions</button>
-                    <button class="tab" onclick="switchTab('announcements')">📢 Announcements</button>
-                </div>
-
-                <!-- Planets Tab -->
-                <div id="planetsTab" class="tab-content active">
-                    <h3>Planetary Management</h3>
-                    <div style="margin-bottom: 20px;">
-                        <button onclick="showEditMode()" id="editModeBtn" style="margin-right: 10px;">📝 Edit Planet Control</button>
-                        <button onclick="saveAllChanges()" id="saveChangesBtn" style="display: none; background: #4caf50;">💾 Save All Changes</button>
-                        <button onclick="cancelEditMode()" id="cancelBtn" style="display: none; background: #f44336; margin-left: 10px;">❌ Cancel</button>
-                    </div>
-                    <div id="planetsList" class="planet-list">
-                        <div class="loading">Loading planets...</div>
-                    </div>
+                    <button class="tab active" onclick="switchTab('mapdata')">Map Data</button>
+                    <button class="tab" onclick="switchTab('supplies')">Supplies</button>
+                    <button class="tab" onclick="switchTab('actions')">Actions</button>
+                    <button class="tab" onclick="switchTab('announcements')">Announcements</button>
                 </div>
 
                 <!-- Supplies Tab -->
@@ -458,7 +444,7 @@
                 <div id="announcementsTab" class="tab-content">
                     <h3>Announcements Management</h3>
                     <div style="margin-bottom: 30px;">
-                        <button onclick="showCreateAnnouncementForm()" id="createAnnouncementBtn" style="margin-right: 10px;">📝 Create New Announcement</button>
+                        <button onclick="showCreateAnnouncementForm()" id="createAnnouncementBtn" style="margin-right: 10px;">Create New Announcement</button>
                     </div>
 
                     <!-- Create/Edit Announcement Form -->
@@ -510,25 +496,25 @@
                 <div id="mapdataTab" class="tab-content">
                     <h3>Map Data Management</h3>
                     <div style="margin-bottom: 20px; display: flex; gap: 10px;">
-                        <button onclick="loadMapData()" style="background: #4caf50;">🔄 Refresh Map Data</button>
-                        <button onclick="recalculateSectorControl()" style="background: #ff9800;">🗺️ Recalculate Sectors</button>
-                        <button onclick="showMapDataEdit()" id="editMapBtn" style="background: #2196f3;">✏️ Edit Mode</button>
-                        <button onclick="saveMapChanges()" id="saveMapBtn" style="display: none; background: #4caf50;">💾 Save Changes</button>
-                        <button onclick="cancelMapEdit()" id="cancelMapBtn" style="display: none; background: #f44336;">❌ Cancel</button>
+                        <button onclick="loadMapData()" style="background: #4caf50;">Refresh Map Data</button>
+                        <button onclick="recalculateSectorControl()" style="background: #ff9800;">Recalculate Sectors</button>
+                        <button onclick="showMapDataEdit()" id="editMapBtn" style="background: #2196f3;">Edit Mode</button>
+                        <button onclick="saveMapChanges()" id="saveMapBtn" style="display: none; background: #4caf50;">Save Changes</button>
+                        <button onclick="cancelMapEdit()" id="cancelMapBtn" style="display: none; background: #f44336;">Cancel</button>
                     </div>
 
                     <!-- Map Data Summary -->
                     <div id="mapSummary" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px;">
                         <div class="stat-card">
-                            <h4>🌍 Planet Overview</h4>
+                            <h4>Planet Overview</h4>
                             <div id="mapPlanetStats" class="loading">Loading...</div>
                         </div>
                         <div class="stat-card">
-                            <h4>🗺️ Sector Control</h4>
+                            <h4>Sector Control</h4>
                             <div id="mapSectorStats" class="loading">Loading...</div>
                         </div>
                         <div class="stat-card">
-                            <h4>⚔️ Faction Balance</h4>
+                            <h4>Faction Balance</h4>
                             <div id="mapFactionStats" class="loading">Loading...</div>
                         </div>
                     </div>
@@ -559,16 +545,16 @@
                     <h3>System Actions</h3>
                     <div style="display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
                         <button onclick="incrementProductionCycle()" style="padding: 15px;">
-                            🔄 Increment Production Cycle
+                            Increment Production Cycle
                         </button>
                         <button onclick="recalculateStats()" style="padding: 15px;">
-                            📊 Recalculate Faction Stats
+                            Recalculate Faction Stats
                         </button>
                         <button onclick="refreshData()" style="padding: 15px;">
-                            🔃 Refresh All Data
+                            Refresh All Data
                         </button>
                         <button onclick="exportData()" style="padding: 15px;">
-                            💾 Export Data
+                            Export Data
                         </button>
                     </div>
                     <div id="actionResult"></div>
@@ -689,7 +675,6 @@
         async function loadDashboardData() {
             await Promise.all([
                 loadStats(),
-                loadPlanets(),
                 loadSupplies(),
                 loadAnnouncements() // Add this line
             ]);
@@ -713,7 +698,7 @@
             statsGrid.innerHTML = `
                 <!-- Planet Statistics -->
                 <div class="stat-card">
-                    <h3>🌍 Planet Overview</h3>
+                    <h3>Planet Overview</h3>
                     <div class="stat-item">
                         <span>Total Planets:</span>
                         <span>${data.planets.total}</span>
@@ -734,14 +719,14 @@
 
                 <!-- Faction Statistics -->
                 <div class="stat-card">
-                    <h3>⚔️ Faction Control</h3>
+                    <h3>Faction Control</h3>
                     <div class="stat-item">
                         <span>Republic Planets:</span>
                         <span style="color: #4fc3f7;">${data.planets.republic}</span>
                     </div>
                     <div class="stat-item">
                         <span>Separatists Planets:</span>
-                        <span style="color: #f44336;">${data.planets.Separatists}</span>
+                        <span style="color: #f44336;">${data.planets.separatists}</span>
                     </div>
                     <div class="stat-item">
                         <span>Republic Active:</span>
@@ -749,13 +734,13 @@
                     </div>
                     <div class="stat-item">
                         <span>Separatists Active:</span>
-                        <span>${data.production.Separatists.activePlanets}</span>
+                        <span>${data.production.separatists.activePlanets}</span>
                     </div>
                 </div>
 
                 <!-- Supply Statistics -->
                 <div class="stat-card">
-                    <h3>📦 Supply Status</h3>
+                    <h3>Supply Status</h3>
                     <div class="stat-item">
                         <span>Total Supply:</span>
                         <span>${formatNumber(data.supplies.totalSupply)}</span>
@@ -770,7 +755,7 @@
 
                 <!-- Production Statistics -->
                 <div class="stat-card">
-                    <h3>🏭 Total Production</h3>
+                    <h3>Total Production</h3>
                     <div class="stat-item">
                         <span>Production Cycles:</span>
                         <span>${data.productionCycles}</span>
@@ -862,7 +847,7 @@
 
         async function loadPlanets() {
             try {
-                const response = await apiCall('/planets');
+                const response = await apiCall('/mapdata');
                 if (response && response.ok) {
                     const data = await response.json();
                     currentPlanetData = data.planets;
@@ -1737,7 +1722,7 @@
         async function exportData() {
             try {
                 const [planetsRes, suppliesRes, statsRes] = await Promise.all([
-                    apiCall('/planets'),
+                    apiCall('/mapdata'),
                     apiCall('/supplies'),
                     apiCall('/stats/dashboard')
                 ]);
@@ -1817,437 +1802,6 @@
                 announcementForm.addEventListener('submit', handleAnnouncementSubmit);
             }
         });
-    </script>
-
-        function displaySupplies(supplies) {
-            const suppliesList = document.getElementById('suppliesList');
-            if (!supplies || Object.keys(supplies).length === 0) {
-                suppliesList.innerHTML = '<div class="loading">No supply data found</div>';
-                return;
-            }
-
-            suppliesList.innerHTML = Object.entries(supplies).map(([item, amount]) => `
-                <div class="supply-item">
-                    <div class="supply-name">${item}</div>
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span>Current Stock: <strong>${formatNumber(amount)}</strong></span>
-                        <div style="display: flex; gap: 10px;">
-                            <input type="number" id="amount-${item.replace(/\s+/g, '')}" placeholder="Amount" style="width: 100px; padding: 5px;">
-                            <button onclick="updateSupply('${item}', 'set')" style="padding: 5px 10px; font-size: 12px;">Set</button>
-                            <button onclick="updateSupply('${item}', 'add')" style="padding: 5px 10px; font-size: 12px;">Add</button>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        // Action functions
-        async function updateSupply(itemName, action) {
-            const inputId = `amount-${itemName.replace(/\s+/g, '')}`;
-            const amount = parseFloat(document.getElementById(inputId).value);
-            
-            if (isNaN(amount)) {
-                showError('actionResult', 'Please enter a valid number');
-                return;
-            }
-
-            try {
-                let response;
-                if (action === 'set') {
-                    response = await apiCall(`/supplies/${encodeURIComponent(itemName)}`, {
-                        method: 'PUT',
-                        body: { amount }
-                    });
-                } else if (action === 'add') {
-                    response = await apiCall(`/supplies/${encodeURIComponent(itemName)}/add`, {
-                        method: 'PATCH',
-                        body: { amount }
-                    });
-                }
-
-                if (response && response.ok) {
-                    const data = await response.json();
-                    showSuccess('actionResult', data.message);
-                    await loadSupplies();
-                    await loadStats();
-                    document.getElementById(inputId).value = '';
-                } else {
-                    const error = await response.json();
-                    showError('actionResult', error.error);
-                }
-            } catch (error) {
-                showError('actionResult', 'Error updating supply: ' + error.message);
-            }
-        }
-
-        async function incrementProductionCycle() {
-            try {
-                const response = await apiCall('/stats/production-cycles/increment', {
-                    method: 'POST'
-                });
-
-                if (response && response.ok) {
-                    const data = await response.json();
-                    showSuccess('actionResult', data.message);
-                    await loadStats();
-                } else {
-                    const error = await response.json();
-                    showError('actionResult', error.error);
-                }
-            } catch (error) {
-                showError('actionResult', 'Error incrementing production cycle: ' + error.message);
-            }
-        }
-
-        async function recalculateStats() {
-            try {
-                const response = await apiCall('/stats/recalculate', {
-                    method: 'POST'
-                });
-
-                if (response && response.ok) {
-                    const data = await response.json();
-                    showSuccess('actionResult', data.message);
-                    await loadStats();
-                } else {
-                    const error = await response.json();
-                    showError('actionResult', error.error);
-                }
-            } catch (error) {
-                showError('actionResult', 'Error recalculating stats: ' + error.message);
-            }
-        }
-
-        async function refreshData() {
-            showSuccess('actionResult', 'Refreshing all data...');
-            await loadDashboardData();
-            showSuccess('actionResult', 'All data refreshed successfully!');
-        }
-
-        async function exportData() {
-            try {
-                const [planetsRes, suppliesRes, statsRes] = await Promise.all([
-                    apiCall('/planets'),
-                    apiCall('/supplies'),
-                    apiCall('/stats/dashboard')
-                ]);
-
-                if (planetsRes.ok && suppliesRes.ok && statsRes.ok) {
-                    const exportData = {
-                        timestamp: new Date().toISOString(),
-                        planets: await planetsRes.json(),
-                        supplies: await suppliesRes.json(),
-                        stats: await statsRes.json()
-                    };
-
-                    const dataStr = JSON.stringify(exportData, null, 2);
-                    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-                    const url = URL.createObjectURL(dataBlob);
-                    
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = `space-map-export-${new Date().toISOString().split('T')[0]}.json`;
-                    link.click();
-                    
-                    URL.revokeObjectURL(url);
-                    showSuccess('actionResult', 'Data exported successfully!');
-                } else {
-                    showError('actionResult', 'Failed to export data');
-                }
-            } catch (error) {
-                showError('actionResult', 'Error exporting data: ' + error.message);
-            }
-        }
-
-        // UI helper functions
-        function switchTab(tabName) {
-            // Remove active class from all tabs and content
-            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-
-            // Add active class to selected tab and content
-            event.target.classList.add('active');
-            document.getElementById(`${tabName}Tab`).classList.add('active');
-            
-            // Load map data when switching to map tab
-            if (tabName === 'mapdata') {
-                loadMapData();
-            }
-        }
-        function formatNumber(num) {
-            return new Intl.NumberFormat().format(num);
-        }
-
-        function showError(elementId, message) {
-            const element = document.getElementById(elementId);
-            element.innerHTML = `<div class="error">${message}</div>`;
-            setTimeout(() => element.innerHTML = '', 5000);
-        }
-
-        function showSuccess(elementId, message) {
-            const element = document.getElementById(elementId);
-            element.innerHTML = `<div class="success">${message}</div>`;
-            setTimeout(() => element.innerHTML = '', 5000);
-        }
-
-        // Event listeners
-        document.getElementById('loginFormElement').addEventListener('submit', login);
-
-        // Auto-refresh data every 30 seconds
-        setInterval(() => {
-            if (authToken && !editMode) {
-                loadStats();
-            }
-        }, 30000);
-    </script>Object.entries(data.production.totalProduction).map(([resource, amount]) => `
-                        <div class="stat-item">
-                            <span>${resource}:</span>
-                            <span>${formatNumber(amount)}/month</span>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-        }
-
-        async function loadPlanets() {
-            try {
-                const response = await apiCall('/planets');
-                if (response && response.ok) {
-                    const data = await response.json();
-                    displayPlanets(data.planets);
-                }
-            } catch (error) {
-                console.error('Error loading planets:', error);
-            }
-        }
-
-        function displayPlanets(planets) {
-            const planetsList = document.getElementById('planetsList');
-            if (!planets || Object.keys(planets).length === 0) {
-                planetsList.innerHTML = '<div class="loading">No planets found</div>';
-                return;
-            }
-
-            planetsList.innerHTML = Object.entries(planets).map(([name, planet]) => `
-                <div class="planet-item faction-${planet.faction ? planet.faction.toLowerCase() : 'unknown'}">
-                    <div class="planet-name">${name}</div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
-                        <div>
-                            <strong>Faction:</strong> 
-                            <span style="color: ${planet.faction === 'Republic' ? '#4fc3f7' : planet.faction === 'Separatists' ? '#f44336' : '#888'}">${planet.faction || 'Unknown'}</span>
-                        </div>
-                        <div>
-                            <strong>Status:</strong> 
-                            <span class="status-${planet.status ? planet.status.toLowerCase() : 'unknown'}">${planet.status || 'Unknown'}</span>
-                        </div>
-                    </div>
-                    ${planet.monthlyProduction ? `
-                        <div>
-                            <strong>Monthly Production:</strong>
-                            <div style="margin-top: 8px; font-size: 0.9em;">
-                                ${Object.entries(planet.monthlyProduction).map(([resource, amount]) => 
-                                    `<span style="margin-right: 15px;">${resource}: ${formatNumber(amount)}</span>`
-                                ).join('')}
-                            </div>
-                        </div>
-                    ` : ''}
-                </div>
-            `).join('');
-        }
-
-        async function loadSupplies() {
-            try {
-                const response = await apiCall('/supplies');
-                if (response && response.ok) {
-                    const data = await response.json();
-                    displaySupplies(data.supplies);
-                }
-            } catch (error) {
-                console.error('Error loading supplies:', error);
-            }
-        }
-
-        function displaySupplies(supplies) {
-            const suppliesList = document.getElementById('suppliesList');
-            if (!supplies || Object.keys(supplies).length === 0) {
-                suppliesList.innerHTML = '<div class="loading">No supply data found</div>';
-                return;
-            }
-
-            suppliesList.innerHTML = Object.entries(supplies).map(([item, amount]) => `
-                <div class="supply-item">
-                    <div class="supply-name">${item}</div>
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span>Current Stock: <strong>${formatNumber(amount)}</strong></span>
-                        <div style="display: flex; gap: 10px;">
-                            <input type="number" id="amount-${item.replace(/\s+/g, '')}" placeholder="Amount" style="width: 100px; padding: 5px;">
-                            <button onclick="updateSupply('${item}', 'set')" style="padding: 5px 10px; font-size: 12px;">Set</button>
-                            <button onclick="updateSupply('${item}', 'add')" style="padding: 5px 10px; font-size: 12px;">Add</button>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        // Action functions
-        async function updateSupply(itemName, action) {
-            const inputId = `amount-${itemName.replace(/\s+/g, '')}`;
-            const amount = parseFloat(document.getElementById(inputId).value);
-            
-            if (isNaN(amount)) {
-                showError('actionResult', 'Please enter a valid number');
-                return;
-            }
-
-            try {
-                let response;
-                if (action === 'set') {
-                    response = await apiCall(`/supplies/${encodeURIComponent(itemName)}`, {
-                        method: 'PUT',
-                        body: { amount }
-                    });
-                } else if (action === 'add') {
-                    response = await apiCall(`/supplies/${encodeURIComponent(itemName)}/add`, {
-                        method: 'PATCH',
-                        body: { amount }
-                    });
-                }
-
-                if (response && response.ok) {
-                    const data = await response.json();
-                    showSuccess('actionResult', data.message);
-                    await loadSupplies();
-                    await loadStats();
-                    document.getElementById(inputId).value = '';
-                } else {
-                    const error = await response.json();
-                    showError('actionResult', error.error);
-                }
-            } catch (error) {
-                showError('actionResult', 'Error updating supply: ' + error.message);
-            }
-        }
-
-        async function incrementProductionCycle() {
-            try {
-                const response = await apiCall('/stats/production-cycles/increment', {
-                    method: 'POST'
-                });
-
-                if (response && response.ok) {
-                    const data = await response.json();
-                    showSuccess('actionResult', data.message);
-                    await loadStats();
-                } else {
-                    const error = await response.json();
-                    showError('actionResult', error.error);
-                }
-            } catch (error) {
-                showError('actionResult', 'Error incrementing production cycle: ' + error.message);
-            }
-        }
-
-        async function recalculateStats() {
-            try {
-                const response = await apiCall('/stats/recalculate', {
-                    method: 'POST'
-                });
-
-                if (response && response.ok) {
-                    const data = await response.json();
-                    showSuccess('actionResult', data.message);
-                    await loadStats();
-                } else {
-                    const error = await response.json();
-                    showError('actionResult', error.error);
-                }
-            } catch (error) {
-                showError('actionResult', 'Error recalculating stats: ' + error.message);
-            }
-        }
-
-        async function refreshData() {
-            showSuccess('actionResult', 'Refreshing all data...');
-            await loadDashboardData();
-            showSuccess('actionResult', 'All data refreshed successfully!');
-        }
-
-        async function exportData() {
-            try {
-                const [planetsRes, suppliesRes, statsRes] = await Promise.all([
-                    apiCall('/planets'),
-                    apiCall('/supplies'),
-                    apiCall('/stats/dashboard')
-                ]);
-
-                if (planetsRes.ok && suppliesRes.ok && statsRes.ok) {
-                    const exportData = {
-                        timestamp: new Date().toISOString(),
-                        planets: await planetsRes.json(),
-                        supplies: await suppliesRes.json(),
-                        stats: await statsRes.json()
-                    };
-
-                    const dataStr = JSON.stringify(exportData, null, 2);
-                    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-                    const url = URL.createObjectURL(dataBlob);
-                    
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = `space-map-export-${new Date().toISOString().split('T')[0]}.json`;
-                    link.click();
-                    
-                    URL.revokeObjectURL(url);
-                    showSuccess('actionResult', 'Data exported successfully!');
-                } else {
-                    showError('actionResult', 'Failed to export data');
-                }
-            } catch (error) {
-                showError('actionResult', 'Error exporting data: ' + error.message);
-            }
-        }
-
-        // UI helper functions
-        function switchTab(tabName) {
-            // Remove active class from all tabs and content
-            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-
-            // Add active class to selected tab and content
-            event.target.classList.add('active');
-            document.getElementById(`${tabName}Tab`).classList.add('active');
-            
-            // Load map data when switching to map tab
-            if (tabName === 'mapdata') {
-                loadMapData();
-            }
-        }
-
-        function formatNumber(num) {
-            return new Intl.NumberFormat().format(num);
-        }
-
-        function showError(elementId, message) {
-            const element = document.getElementById(elementId);
-            element.innerHTML = `<div class="error">${message}</div>`;
-            setTimeout(() => element.innerHTML = '', 5000);
-        }
-
-        function showSuccess(elementId, message) {
-            const element = document.getElementById(elementId);
-            element.innerHTML = `<div class="success">${message}</div>`;
-            setTimeout(() => element.innerHTML = '', 5000);
-        }
-
-        // Event listeners
-        document.getElementById('loginFormElement').addEventListener('submit', login);
-
-        // Auto-refresh data every 30 seconds
-        setInterval(() => {
-            if (authToken) {
-                loadStats();
-            }
-        }, 30000);
     </script>
 </body>
 </html>

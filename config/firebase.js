@@ -112,7 +112,7 @@ const FirebaseHelpers = {
     // Update planetary data
     async updatePlanetaryData(planetaryData) {
         try {
-            await db.ref('planets/planets').set(planetaryData);
+            await db.ref('mapData/planets').set(planetaryData);
             console.log('✅ Planetary data updated');
             return true;
         } catch (error) {
@@ -125,7 +125,7 @@ const FirebaseHelpers = {
     async updatePlanet(planetName, planetData) {
         try {
             // Write to the correct nested path
-            await db.ref(`planets/planets/${planetName}`).set(planetData);
+            await db.ref(`mapData/planets/${planetName}`).set(planetData);
             console.log(`✅ Planet ${planetName} updated`);
             return true;
         } catch (error) {
@@ -242,7 +242,8 @@ const FirebaseHelpers = {
     // Calculate and update faction stats from current planetary data
     async calculateFactionStats() {
         try {
-            const planets = await this.getPlanetaryData();
+            const mapData = await this.getMapData();
+            const planets = mapData?.planets;
             
             const factionData = {
                 Republic: {
@@ -255,7 +256,7 @@ const FirebaseHelpers = {
                         "Food Rations": 0
                     }
                 },
-                CIS: {
+                Separatists: {
                     activePlanets: 0,
                     totalProduction: {
                         "Ammo": 0,

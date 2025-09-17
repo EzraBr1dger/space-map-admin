@@ -8,13 +8,14 @@ const router = express.Router();
 router.get('/dashboard', authenticateToken, async (req, res) => {
     try {
         // Get all data in parallel for better performance
-        const [planets, supplies, factionStats, productionCycles] = await Promise.all([
-            FirebaseHelpers.getPlanetaryData(),
+        const [mapData, supplies, factionStats, productionCycles] = await Promise.all([
+            FirebaseHelpers.getMapData(),
             FirebaseHelpers.getSupplyData(),
             FirebaseHelpers.getFactionStats(),
             FirebaseHelpers.getProductionCycles()
         ]);
 
+        const planets = mapData?.planets;
         // Calculate planet statistics
         const planetStats = {
             total: 0,
@@ -22,7 +23,7 @@ router.get('/dashboard', authenticateToken, async (req, res) => {
             inactive: 0,
             contested: 0,
             republic: 0,
-            cis: 0
+            separatists: 0
         };
 
         if (planets) {
@@ -35,7 +36,7 @@ router.get('/dashboard', authenticateToken, async (req, res) => {
                     else if (planetData.status === 'Contested') planetStats.contested++;
                     
                     if (planetData.faction === 'Republic') planetStats.republic++;
-                    else if (planetData.faction === 'CIS') planetStats.cis++;
+                    else if (planetData.faction === 'Separatists') planetStats.separatists++;
                 }
             }
         }
@@ -53,7 +54,7 @@ router.get('/dashboard', authenticateToken, async (req, res) => {
                 activePlanets: 0,
                 totalProduction: {}
             },
-            cis: factionStats?.CIS || {
+            separatists: factionStats?.Separatists || {
                 activePlanets: 0,
                 totalProduction: {}
             },
@@ -64,8 +65,8 @@ router.get('/dashboard', authenticateToken, async (req, res) => {
         const resources = ['Ammo', 'Capital Ships', 'Starships', 'Vehicles', 'Food Rations'];
         for (const resource of resources) {
             const republicProduction = productionStats.republic.totalProduction[resource] || 0;
-            const cisProduction = productionStats.cis.totalProduction[resource] || 0;
-            productionStats.totalProduction[resource] = republicProduction + cisProduction;
+            const separatistsProduction = productionStats.separatists.totalProduction[resource] || 0;
+            productionStats.totalProduction[resource] = republicProduction + separatistsProduction;
         }
 
         res.json({
@@ -101,15 +102,15 @@ router.get('/factions', authenticateToken, async (req, res) => {
                 production: factionStats?.Republic?.totalProduction || {},
                 activePlanets: factionStats?.Republic?.activePlanets || 0
             },
-            CIS: {
+            Separatists: {
                 planets: {
                     active: 0,
                     inactive: 0,
                     contested: 0,
                     total: 0
                 },
-                production: factionStats?.CIS?.totalProduction || {},
-                activePlanets: factionStats?.CIS?.activePlanets || 0
+                production: factionStats?.Separatists?.totalProduction || {},
+                activePlanets: factionStats?.Separatists?.activePlanets || 0
             }
         };
 
@@ -136,14 +137,14 @@ router.get('/factions', authenticateToken, async (req, res) => {
         
         for (const resource of resources) {
             const republicProd = comparison.Republic.production[resource] || 0;
-            const cisProd = comparison.CIS.production[resource] || 0;
+            const separatistsProd = comparison.Separatists.production[resource] || 0;
             
             productionComparison[resource] = {
                 republic: republicProd,
-                cis: cisProd,
-                total: republicProd + cisProd,
-                advantage: republicProd > cisProd ? 'Republic' : cisProd > republicProd ? 'CIS' : 'Tied',
-                difference: Math.abs(republicProd - cisProd)
+                separatists: separatistsProd,
+                total: republicProd + separatistsProd,
+                advantage: republicProd > separatistsProd ? 'Republic' : separatistsProd > republicProd ? 'Separatists' : 'Tied',
+                difference: Math.abs(republicProd - separatistsProd)
             };
         }
 
@@ -152,10 +153,10 @@ router.get('/factions', authenticateToken, async (req, res) => {
             productionComparison,
             summary: {
                 republicPlanets: comparison.Republic.planets.total,
-                cisPlanets: comparison.CIS.planets.total,
+                separatistsPlanets: comparison.Separatists.planets.total,
                 republicActive: comparison.Republic.planets.active,
-                cisActive: comparison.CIS.planets.active,
-                totalPlanets: comparison.Republic.planets.total + comparison.CIS.planets.total
+                separatistsActive: comparison.Separatists.planets.active,
+                totalPlanets: comparison.Republic.planets.total + comparison.Separatists.planets.total
             }
         });
     } catch (error) {
