@@ -394,9 +394,6 @@
                 <button type="submit" style="width: 100%;">Login</button>
             </form>
             <div id="loginError"></div>
-            <p style="margin-top: 20px; text-align: center; color: #888; font-size: 14px;">
-                Default: admin / password123
-            </p>
         </div>
     </div>
 
@@ -753,9 +750,9 @@
                     `).join('')}
                 </div>
 
-                <!-- Production Statistics -->
+                <!-- Weekly Production Statistics -->
                 <div class="stat-card">
-                    <h3>Total Production</h3>
+                    <h3>Weekly Production</h3>
                     <div class="stat-item">
                         <span>Production Cycles:</span>
                         <span>${data.productionCycles}</span>
@@ -763,7 +760,7 @@
                     ${Object.entries(data.production.totalProduction).map(([resource, amount]) => `
                         <div class="stat-item">
                             <span>${resource}:</span>
-                            <span>${formatNumber(amount)}/month</span>
+                            <span>${formatNumber(amount)}/week</span>
                         </div>
                     `).join('')}
                 </div>

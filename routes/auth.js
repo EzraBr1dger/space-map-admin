@@ -8,9 +8,9 @@ const router = express.Router();
 const users = [
     {
         id: 1,
-        username: 'admin',
+        username: 'LoreTeamCW:P',
         // Default password: 'password123' - CHANGE THIS!
-        password: '$2a$10$gMyfHrlpEq7mtIzbZse0Juj32CLr7tRRXDzxRnYX213ozLeFuwpSm',
+        password: '$2a$10$iKPIV.wytj4HfAo9vjBpdOPvYXup.pTPyRa2UDkuXUUqtigbkT3w2',
         role: 'admin'
     }
 ];

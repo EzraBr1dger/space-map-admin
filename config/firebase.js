@@ -206,8 +206,8 @@ const FirebaseHelpers = {
     // Get production cycles count
     async getProductionCycles() {
         try {
-            const snapshot = await db.ref('productionCycles').once('value');
-            return snapshot.val() || 0;
+            const mapData = await this.getMapData();
+            return mapData?.productionCycles || 0;
         } catch (error) {
             console.error('Error getting production cycles:', error);
             throw error;
@@ -217,9 +217,13 @@ const FirebaseHelpers = {
     // Increment production cycles
     async incrementProductionCycles() {
         try {
-            const currentCycles = await this.getProductionCycles();
+            const mapData = await this.getMapData() || {};
+            const currentCycles = mapData.productionCycles || 0;
             const newCycles = currentCycles + 1;
-            await db.ref('productionCycles').set(newCycles);
+            
+            mapData.productionCycles = newCycles;
+            await this.updateMapData(mapData);
+            
             console.log(`✅ Production cycles incremented to ${newCycles}`);
             return newCycles;
         } catch (error) {
@@ -240,6 +244,7 @@ const FirebaseHelpers = {
     },
 
     // Calculate and update faction stats from current planetary data
+    // Calculate and update faction stats from current planetary data
     async calculateFactionStats() {
         try {
             const mapData = await this.getMapData();
@@ -248,7 +253,7 @@ const FirebaseHelpers = {
             const factionData = {
                 Republic: {
                     activePlanets: 0,
-                    totalProduction: {
+                    weeklyProduction: {
                         "Ammo": 0,
                         "Capital Ships": 0,
                         "Starships": 0,
@@ -258,7 +263,7 @@ const FirebaseHelpers = {
                 },
                 Separatists: {
                     activePlanets: 0,
-                    totalProduction: {
+                    weeklyProduction: {
                         "Ammo": 0,
                         "Capital Ships": 0,
                         "Starships": 0,
@@ -270,33 +275,33 @@ const FirebaseHelpers = {
 
             if (planets) {
                 for (const [planetName, planetData] of Object.entries(planets)) {
+                    console.log(`Planet ${planetName}:`, {
+                        faction: planetData?.faction,
+                        status: planetData?.status,
+                        hasWeeklyProduction: !!planetData?.weeklyProduction,
+                        weeklyProduction: planetData?.weeklyProduction
+                    });
+                    
                     if (planetData && planetData.status === "Active") {
                         const faction = planetData.faction;
                         if (factionData[faction]) {
                             factionData[faction].activePlanets += 1;
 
-                            if (planetData.monthlyProduction) {
-                                // Use existing monthlyProduction structure
-                                for (const [resource, amount] of Object.entries(planetData.monthlyProduction)) {
-                                    if (factionData[faction].totalProduction[resource] !== undefined) {
-                                        factionData[faction].totalProduction[resource] += amount;
+                            if (planetData.weeklyProduction) {
+                                for (const [resource, amount] of Object.entries(planetData.weeklyProduction)) {
+                                    if (factionData[faction].weeklyProduction[resource] !== undefined) {
+                                        console.log(`Adding ${amount} ${resource} to ${faction}`);
+                                        factionData[faction].weeklyProduction[resource] += amount || 0;
                                     }
                                 }
-                            } else {
-                                // Handle your current data structure
-                                if (planetData.productionOutput) {
-                                    factionData[faction].totalProduction["Ammo"] += planetData.productionOutput;
-                                }
-                                if (planetData.foodOutput) {
-                                    factionData[faction].totalProduction["Food Rations"] += planetData.foodOutput;
-                                }
-                                // Add other production fields as they exist in your data
                             }
                         }
                     }
                 }
             }
 
+            console.log('Final faction data:', factionData);
+            
             // Save calculated stats
             await db.ref('factionStats').set(factionData);
             return factionData;

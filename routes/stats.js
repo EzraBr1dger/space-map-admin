@@ -52,11 +52,11 @@ router.get('/dashboard', authenticateToken, async (req, res) => {
         const productionStats = {
             republic: factionStats?.Republic || {
                 activePlanets: 0,
-                totalProduction: {}
+                weeklyProduction: {}
             },
             separatists: factionStats?.Separatists || {
                 activePlanets: 0,
-                totalProduction: {}
+                weeklyProduction: {}
             },
             totalProduction: {}
         };
@@ -64,8 +64,8 @@ router.get('/dashboard', authenticateToken, async (req, res) => {
         // Calculate combined production totals
         const resources = ['Ammo', 'Capital Ships', 'Starships', 'Vehicles', 'Food Rations'];
         for (const resource of resources) {
-            const republicProduction = productionStats.republic.totalProduction[resource] || 0;
-            const separatistsProduction = productionStats.separatists.totalProduction[resource] || 0;
+            const republicProduction = productionStats.republic.weeklyProduction[resource] || 0;
+            const separatistsProduction = productionStats.separatists.weeklyProduction[resource] || 0;
             productionStats.totalProduction[resource] = republicProduction + separatistsProduction;
         }
 
