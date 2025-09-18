@@ -43,6 +43,8 @@ router.put('/', authenticateToken, requireAdmin, async (req, res) => {
         if (typeof totalSupply !== 'number') {
             calculatedTotal = Object.values(items).reduce((sum, amount) => sum + (Number(amount) || 0), 0);
         }
+        // Round to 2 decimal places
+        calculatedTotal = Math.round(calculatedTotal * 100) / 100;
 
         const currentTime = Math.floor(Date.now() / 1000); // Unix timestamp for Roblox compatibility
         
@@ -87,6 +89,8 @@ router.put('/:itemName', authenticateToken, requireAdmin, async (req, res) => {
         // Recalculate total supply
         const totalDifference = amount - oldAmount;
         currentSupply.totalSupply = (currentSupply.totalSupply || 0) + totalDifference;
+        // Round to 2 decimal places
+        currentSupply.totalSupply = Math.round(currentSupply.totalSupply * 100) / 100;
         
         const currentTime = Math.floor(Date.now() / 1000);
         currentSupply.lastUpdated = new Date().toISOString();
@@ -126,6 +130,8 @@ router.patch('/:itemName/add', authenticateToken, requireAdmin, async (req, res)
 
         currentSupply.items[itemName] = newAmount;
         currentSupply.totalSupply = (currentSupply.totalSupply || 0) + amount;
+        // Round to 2 decimal places
+        currentSupply.totalSupply = Math.round(currentSupply.totalSupply * 100) / 100;
         
         const currentTime = Math.floor(Date.now() / 1000);
         currentSupply.lastUpdated = new Date().toISOString();
@@ -161,6 +167,8 @@ router.delete('/:itemName', authenticateToken, requireAdmin, async (req, res) =>
         // Remove from total supply
         const itemAmount = currentSupply.items[itemName];
         currentSupply.totalSupply = Math.max(0, (currentSupply.totalSupply || 0) - itemAmount);
+        // Round to 2 decimal places
+        currentSupply.totalSupply = Math.round(currentSupply.totalSupply * 100) / 100;
 
         // Remove the item
         delete currentSupply.items[itemName];
