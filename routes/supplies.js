@@ -20,7 +20,8 @@ router.get('/', authenticateToken, async (req, res) => {
         res.json({ 
             supplies: supplyData.items || {},
             totalSupply: supplyData.totalSupply || 0,
-            lastUpdated: supplyData.lastUpdated || null
+            lastUpdated: supplyData.lastUpdated || null,
+            lastSyncTime: supplyData.lastSyncTime || null
         });
     } catch (error) {
         console.error('Error fetching supply data:', error);
@@ -43,10 +44,13 @@ router.put('/', authenticateToken, requireAdmin, async (req, res) => {
             calculatedTotal = Object.values(items).reduce((sum, amount) => sum + (Number(amount) || 0), 0);
         }
 
+        const currentTime = Math.floor(Date.now() / 1000); // Unix timestamp for Roblox compatibility
+        
         const supplyData = {
             items,
             totalSupply: calculatedTotal,
-            lastUpdated: new Date().toISOString()
+            lastUpdated: new Date().toISOString(),
+            lastSyncTime: currentTime // Add this for Roblox compatibility
         };
 
         await FirebaseHelpers.updateSupplyData(supplyData);
@@ -83,7 +87,10 @@ router.put('/:itemName', authenticateToken, requireAdmin, async (req, res) => {
         // Recalculate total supply
         const totalDifference = amount - oldAmount;
         currentSupply.totalSupply = (currentSupply.totalSupply || 0) + totalDifference;
+        
+        const currentTime = Math.floor(Date.now() / 1000);
         currentSupply.lastUpdated = new Date().toISOString();
+        currentSupply.lastSyncTime = currentTime; // Add this for Roblox compatibility
 
         await FirebaseHelpers.updateSupplyData(currentSupply);
 
@@ -119,7 +126,10 @@ router.patch('/:itemName/add', authenticateToken, requireAdmin, async (req, res)
 
         currentSupply.items[itemName] = newAmount;
         currentSupply.totalSupply = (currentSupply.totalSupply || 0) + amount;
+        
+        const currentTime = Math.floor(Date.now() / 1000);
         currentSupply.lastUpdated = new Date().toISOString();
+        currentSupply.lastSyncTime = currentTime; // Add this for Roblox compatibility
 
         await FirebaseHelpers.updateSupplyData(currentSupply);
 
@@ -154,7 +164,10 @@ router.delete('/:itemName', authenticateToken, requireAdmin, async (req, res) =>
 
         // Remove the item
         delete currentSupply.items[itemName];
+        
+        const currentTime = Math.floor(Date.now() / 1000);
         currentSupply.lastUpdated = new Date().toISOString();
+        currentSupply.lastSyncTime = currentTime; // Add this for Roblox compatibility
 
         await FirebaseHelpers.updateSupplyData(currentSupply);
 
@@ -174,6 +187,8 @@ router.delete('/:itemName', authenticateToken, requireAdmin, async (req, res) =>
 // Reset all supplies to zero
 router.post('/reset', authenticateToken, requireAdmin, async (req, res) => {
     try {
+        const currentTime = Math.floor(Date.now() / 1000);
+        
         const supplyData = {
             items: {
                 "Ammo": 0,
@@ -183,7 +198,8 @@ router.post('/reset', authenticateToken, requireAdmin, async (req, res) => {
                 "Food Rations": 0
             },
             totalSupply: 0,
-            lastUpdated: new Date().toISOString()
+            lastUpdated: new Date().toISOString(),
+            lastSyncTime: currentTime // Add this for Roblox compatibility
         };
 
         await FirebaseHelpers.updateSupplyData(supplyData);
@@ -233,7 +249,8 @@ router.get('/stats', authenticateToken, async (req, res) => {
             averagePerItem: Math.round(averagePerItem * 100) / 100,
             highest: highest ? { name: highest[0], amount: highest[1] } : null,
             lowest: lowest ? { name: lowest[0], amount: lowest[1] } : null,
-            lastUpdated: supplyData.lastUpdated
+            lastUpdated: supplyData.lastUpdated,
+            lastSyncTime: supplyData.lastSyncTime
         });
     } catch (error) {
         console.error('Error getting supply stats:', error);
