@@ -42,6 +42,12 @@ router.put('/planet/:planetName', authenticateToken, requireAdmin, async (req, r
             });
         }
 
+        // ✅ ADD THIS: Convert reputation to efficiency before saving
+        if (planetMapData.reputation !== undefined) {
+            planetMapData.efficiency = planetMapData.reputation;
+            delete planetMapData.reputation; // Remove reputation field
+        }
+
         const currentMapData = await FirebaseHelpers.getMapData() || { planets: {}, sectors: {} };
         
         // Update planet in map data
