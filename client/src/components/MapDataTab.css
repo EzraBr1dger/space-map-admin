@@ -1,0 +1,222 @@
+.mapdata-tab {
+    margin-top: 20px;
+}
+
+.mapdata-tab h3 {
+    color: #64ffda;
+    margin-bottom: 20px;
+    font-size: 1.5rem;
+}
+
+.mapdata-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.btn-refresh {
+    background: #4caf50;
+}
+
+.btn-refresh:hover {
+    background: #388e3c;
+    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+}
+
+.btn-recalculate {
+    background: #ff9800;
+}
+
+.btn-recalculate:hover {
+    background: #f57c00;
+    box-shadow: 0 5px 15px rgba(255, 152, 0, 0.3);
+}
+
+.btn-edit {
+    background: #2196f3;
+}
+
+.btn-edit:hover {
+    background: #1976d2;
+    box-shadow: 0 5px 15px rgba(33, 150, 243, 0.3);
+}
+
+.btn-save {
+    background: #4caf50;
+}
+
+.btn-save:hover {
+    background: #388e3c;
+    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+}
+
+.btn-cancel {
+    background: #f44336;
+}
+
+.btn-cancel:hover {
+    background: #d32f2f;
+    box-shadow: 0 5px 15px rgba(244, 67, 54, 0.3);
+}
+
+.map-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.stats-summary {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.stats-summary h4 {
+    color: #64ffda;
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+}
+
+.summary-item {
+    padding: 5px 0;
+    color: #fff;
+}
+
+.summary-item strong {
+    color: #64ffda;
+}
+
+.map-data-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+}
+
+.map-section h4 {
+    color: #64ffda;
+    margin-bottom: 15px;
+    font-size: 1.2rem;
+}
+
+.planet-list,
+.sector-list {
+    display: grid;
+    gap: 15px;
+}
+
+.planet-card,
+.sector-card {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+}
+
+.planet-card:hover,
+.sector-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(100, 255, 218, 0.3);
+}
+
+.planet-card.changed,
+.sector-card.changed {
+    border: 2px solid #ff9800;
+    background: rgba(255, 152, 0, 0.05);
+}
+
+.planet-name,
+.sector-name {
+    font-size: 1.1rem;
+    color: #64ffda;
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+.planet-info,
+.sector-info {
+    display: grid;
+    gap: 8px;
+}
+
+.planet-info div,
+.sector-info div {
+    color: #fff;
+}
+
+.planet-edit,
+.sector-edit {
+    display: grid;
+    gap: 15px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.form-group label {
+    color: #64ffda;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.form-group input[type="checkbox"] {
+    width: auto;
+    margin-right: 10px;
+}
+
+.form-group small {
+    color: #888;
+    font-size: 0.85rem;
+    margin-top: 3px;
+}
+
+.form-group textarea {
+    min-height: 60px;
+    resize: vertical;
+    font-family: inherit;
+}
+
+.change-indicator {
+    color: #ff9800;
+    font-size: 0.9em;
+    margin-top: 10px;
+    font-weight: 500;
+}
+
+.faction-republic {
+    border-left: 4px solid #4fc3f7;
+}
+
+.faction-separatists {
+    border-left: 4px solid #f44336;
+}
+
+.faction-neutral {
+    border-left: 4px solid #888;
+}
+
+.faction-mandalore {
+    border-left: 4px solid #ff9800;
+}
+
+@media (max-width: 1024px) {
+    .map-data-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .mapdata-controls {
+        flex-direction: column;
+    }
+
+    .mapdata-controls button {
+        width: 100%;
+    }
+}

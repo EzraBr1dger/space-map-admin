@@ -36,7 +36,9 @@ initializeFirebase();
 //}));
 
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: process.env.NODE_ENV === 'production' 
+        ? process.env.FRONTEND_URL 
+        : 'http://localhost:3001',  // React dev server runs on 3001
     credentials: true
 }));
 
@@ -81,10 +83,13 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Catch-all route for frontend (serves index.html for all non-API routes)
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public/index.html'));
-});
+// Serve React build in production only
+if (process.env.NODE_ENV === 'production') {
+    app.use(express.static(path.join(__dirname, 'client/build')));
+    app.get('*', (req, res) => {
+        res.sendFile(path.join(__dirname, 'client/build/index.html'));
+    });
+}
 
 app.listen(PORT, () => {
     console.log(`🚀 Space Map Admin Panel server running on port ${PORT}`);

@@ -1,0 +1,121 @@
+.actions-tab {
+    margin-top: 20px;
+}
+
+.actions-tab h3 {
+    color: #64ffda;
+    margin-bottom: 20px;
+    font-size: 1.5rem;
+}
+
+.actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.action-card {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 25px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.action-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(100, 255, 218, 0.3);
+}
+
+.action-card h4 {
+    color: #64ffda;
+    font-size: 1.2rem;
+    margin: 0;
+}
+
+.action-card p {
+    color: #ccc;
+    line-height: 1.5;
+    margin: 0;
+    flex-grow: 1;
+}
+
+.action-card button {
+    width: 100%;
+    padding: 15px;
+    font-size: 16px;
+    margin-top: auto;
+}
+
+.action-card button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-increment {
+    background: #2196f3;
+}
+
+.btn-increment:hover:not(:disabled) {
+    background: #1976d2;
+    box-shadow: 0 5px 15px rgba(33, 150, 243, 0.3);
+}
+
+.btn-recalculate {
+    background: #ff9800;
+}
+
+.btn-recalculate:hover:not(:disabled) {
+    background: #f57c00;
+    box-shadow: 0 5px 15px rgba(255, 152, 0, 0.3);
+}
+
+.btn-refresh {
+    background: #4caf50;
+}
+
+.btn-refresh:hover:not(:disabled) {
+    background: #388e3c;
+    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+}
+
+.btn-export {
+    background: #9c27b0;
+}
+
+.btn-export:hover:not(:disabled) {
+    background: #7b1fa2;
+    box-shadow: 0 5px 15px rgba(156, 39, 176, 0.3);
+}
+
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.loading-spinner {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 30px 50px;
+    border-radius: 10px;
+    color: #64ffda;
+    font-size: 1.2rem;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(100, 255, 218, 0.3);
+}
+
+@media (max-width: 768px) {
+    .actions-grid {
+        grid-template-columns: 1fr;
+    }
+}

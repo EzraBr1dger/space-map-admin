@@ -1,0 +1,376 @@
+import React, { useState, useEffect } from 'react';
+import api from '../services/api';
+import './MapDataTab.css';
+
+function MapDataTab() {
+    const [mapData, setMapData] = useState({ planets: {}, sectors: {} });
+    const [loading, setLoading] = useState(true);
+    const [editMode, setEditMode] = useState(false);
+    const [originalMapData, setOriginalMapData] = useState({});
+    const [changedItems, setChangedItems] = useState(new Set());
+    const [message, setMessage] = useState({ type: '', text: '' });
+
+    useEffect(() => {
+        loadMapData();
+    }, []);
+
+    const loadMapData = async () => {
+        try {
+            const { data } = await api.get('/mapdata');
+            setMapData(data);
+            setOriginalMapData(JSON.parse(JSON.stringify(data))); // Deep copy
+        } catch (error) {
+            console.error('Error loading map data:', error);
+            showMessage('error', 'Failed to load map data');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const showMessage = (type, text) => {
+        setMessage({ type, text });
+        setTimeout(() => setMessage({ type: '', text: '' }), 5000);
+    };
+
+    const enterEditMode = () => {
+        setEditMode(true);
+        setOriginalMapData(JSON.parse(JSON.stringify(mapData)));
+        setChangedItems(new Set());
+        showMessage('success', 'Edit mode enabled. Make changes and click Save Changes.');
+    };
+
+    const cancelEdit = () => {
+        setEditMode(false);
+        setMapData(originalMapData);
+        setChangedItems(new Set());
+        showMessage('success', 'Edit mode cancelled. All changes discarded.');
+    };
+
+    const updatePlanet = (planetName, field, value) => {
+        setMapData(prev => ({
+            ...prev,
+            planets: {
+                ...prev.planets,
+                [planetName]: {
+                    ...prev.planets[planetName],
+                    [field]: field === 'reputation' ? parseFloat(value) / 100 : value
+                }
+            }
+        }));
+        setChangedItems(prev => new Set([...prev, `planet-${planetName}`]));
+    };
+
+    const updateSector = (sectorName, field, value) => {
+        setMapData(prev => ({
+            ...prev,
+            sectors: {
+                ...prev.sectors,
+                [sectorName]: {
+                    ...prev.sectors[sectorName],
+                    [field]: value
+                }
+            }
+        }));
+        setChangedItems(prev => new Set([...prev, `sector-${sectorName}`]));
+    };
+
+    const saveChanges = async () => {
+        try {
+            showMessage('success', 'Saving changes...');
+
+            const savePromises = [];
+
+            // Save changed planets
+            Object.entries(mapData.planets).forEach(([planetName, planetData]) => {
+                if (changedItems.has(`planet-${planetName}`)) {
+                    savePromises.push(
+                        api.put(`/mapdata/planet/${encodeURIComponent(planetName)}`, planetData)
+                    );
+                }
+            });
+
+            // Save changed sectors
+            Object.entries(mapData.sectors).forEach(([sectorName, sectorData]) => {
+                if (changedItems.has(`sector-${sectorName}`)) {
+                    savePromises.push(
+                        api.put(`/mapdata/sector/${encodeURIComponent(sectorName)}`, sectorData)
+                    );
+                }
+            });
+
+            if (savePromises.length === 0) {
+                showMessage('error', 'No changes to save.');
+                return;
+            }
+
+            await Promise.all(savePromises);
+
+            showMessage('success', `Successfully updated ${savePromises.length} items! Changes will appear in Roblox within 60 seconds.`);
+            setEditMode(false);
+            setChangedItems(new Set());
+            await loadMapData();
+        } catch (error) {
+            showMessage('error', error.response?.data?.error || 'Failed to save changes');
+        }
+    };
+
+    const recalculateSectors = async () => {
+        try {
+            showMessage('success', 'Recalculating sector control...');
+            const { data } = await api.post('/mapdata/recalculate-sectors');
+            showMessage('success', data.message);
+            await loadMapData();
+        } catch (error) {
+            showMessage('error', error.response?.data?.error || 'Failed to recalculate sectors');
+        }
+    };
+
+    if (loading) return <div className="loading">Loading map data...</div>;
+
+    const stats = calculateStats(mapData);
+
+    return (
+        <div className="mapdata-tab">
+            <h3>Map Data Management</h3>
+
+            <div className="mapdata-controls">
+                <button onClick={loadMapData} className="btn-refresh">Refresh Map Data</button>
+                <button onClick={recalculateSectors} className="btn-recalculate">Recalculate Sectors</button>
+                {!editMode ? (
+                    <button onClick={enterEditMode} className="btn-edit">Edit Mode</button>
+                ) : (
+                    <>
+                        <button onClick={saveChanges} className="btn-save">Save Changes</button>
+                        <button onClick={cancelEdit} className="btn-cancel">Cancel</button>
+                    </>
+                )}
+            </div>
+
+            {message.text && (
+                <div className={`message ${message.type}`}>
+                    {message.text}
+                </div>
+            )}
+
+            <div className="map-summary">
+                <StatsSummary title="Planet Overview" stats={stats.planets} />
+                <StatsSummary title="Sector Control" stats={stats.sectors} />
+                <StatsSummary title="Faction Balance" stats={stats.factions} />
+            </div>
+
+            <div className="map-data-grid">
+                <div className="map-section">
+                    <h4>Planet Map Data</h4>
+                    <div className="planet-list">
+                        {Object.entries(mapData.planets).map(([name, planet]) => (
+                            <PlanetCard
+                                key={name}
+                                name={name}
+                                planet={planet}
+                                editMode={editMode}
+                                isChanged={changedItems.has(`planet-${name}`)}
+                                onUpdate={updatePlanet}
+                            />
+                        ))}
+                    </div>
+                </div>
+
+                <div className="map-section">
+                    <h4>Sector Data</h4>
+                    <div className="sector-list">
+                        {Object.entries(mapData.sectors).map(([name, sector]) => (
+                            <SectorCard
+                                key={name}
+                                name={name}
+                                sector={sector}
+                                editMode={editMode}
+                                isChanged={changedItems.has(`sector-${name}`)}
+                                onUpdate={updateSector}
+                            />
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function StatsSummary({ title, stats }) {
+    return (
+        <div className="stats-summary">
+            <h4>{title}</h4>
+            {Object.entries(stats).map(([key, value]) => (
+                <div key={key} className="summary-item">
+                    {key}: <strong>{value}</strong>
+                </div>
+            ))}
+        </div>
+    );
+}
+
+function PlanetCard({ name, planet, editMode, isChanged, onUpdate }) {
+    const reputation = (planet.reputation || planet.efficiency || 1.0) * 100;
+
+    if (!editMode) {
+        return (
+            <div className={`planet-card faction-${planet.faction?.toLowerCase()}`}>
+                <div className="planet-name">{name}</div>
+                <div className="planet-info">
+                    <div><strong>Faction:</strong> <span style={{ color: getFactionColor(planet.faction) }}>{planet.faction}</span></div>
+                    <div><strong>Reputation:</strong> <span style={{ color: getReputationColor(reputation) }}>{Math.round(reputation)}%</span></div>
+                    {planet.description && <div><strong>Description:</strong> {planet.description}</div>}
+                    {planet.customFactionImage && <div><strong>Custom Icon:</strong> {planet.customFactionImage}</div>}
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className={`planet-card faction-${planet.faction?.toLowerCase()} ${isChanged ? 'changed' : ''}`}>
+            <div className="planet-name">{name}</div>
+            <div className="planet-edit">
+                <div className="form-group">
+                    <label>Faction:</label>
+                    <select value={planet.faction} onChange={(e) => onUpdate(name, 'faction', e.target.value)}>
+                        <option value="Republic">Republic</option>
+                        <option value="Separatists">Separatists</option>
+                        <option value="Neutral">Neutral</option>
+                        <option value="Mandalore">Mandalore</option>
+                    </select>
+                </div>
+                <div className="form-group">
+                    <label>Reputation (%):</label>
+                    <input
+                        type="number"
+                        value={Math.round(reputation)}
+                        onChange={(e) => onUpdate(name, 'reputation', e.target.value)}
+                        min="0"
+                        max="200"
+                    />
+                    <small>100% = normal, 80% = reduced, 120% = bonus</small>
+                </div>
+                <div className="form-group">
+                    <label>Description:</label>
+                    <textarea
+                        value={planet.description || ''}
+                        onChange={(e) => onUpdate(name, 'description', e.target.value)}
+                        rows="3"
+                    />
+                </div>
+                <div className="form-group">
+                    <label>Custom Faction Image ID:</label>
+                    <input
+                        type="text"
+                        value={planet.customFactionImage || ''}
+                        onChange={(e) => onUpdate(name, 'customFactionImage', e.target.value)}
+                        placeholder="rbxassetid://123456789"
+                    />
+                </div>
+                {isChanged && <div className="change-indicator">📝 Changes pending...</div>}
+            </div>
+        </div>
+    );
+}
+
+function SectorCard({ name, sector, editMode, isChanged, onUpdate }) {
+    if (!editMode) {
+        return (
+            <div className="sector-card">
+                <div className="sector-name">{name}</div>
+                <div className="sector-info">
+                    <div><strong>Controlled By:</strong> <span style={{ color: getFactionColor(sector.controlledBy) }}>{sector.controlledBy}</span></div>
+                    <div><strong>State:</strong> {sector.state}</div>
+                    <div><strong>Highlighted:</strong> {sector.highlighted ? 'Yes' : 'No'}</div>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className={`sector-card ${isChanged ? 'changed' : ''}`}>
+            <div className="sector-name">{name}</div>
+            <div className="sector-edit">
+                <div className="form-group">
+                    <label>Controlled By:</label>
+                    <select value={sector.controlledBy} onChange={(e) => onUpdate(name, 'controlledBy', e.target.value)}>
+                        <option value="Republic">Republic</option>
+                        <option value="Separatists">Separatists</option>
+                        <option value="Neutral">Neutral</option>
+                        <option value="Contested">Contested</option>
+                        <option value="Independent">Independent</option>
+                    </select>
+                </div>
+                <div className="form-group">
+                    <label>State:</label>
+                    <select value={sector.state} onChange={(e) => onUpdate(name, 'state', e.target.value)}>
+                        <option value="Peaceful">Peaceful</option>
+                        <option value="Frontline">Frontline</option>
+                        <option value="War">War</option>
+                    </select>
+                </div>
+                <div className="form-group">
+                    <label>
+                        <input
+                            type="checkbox"
+                            checked={sector.highlighted || false}
+                            onChange={(e) => onUpdate(name, 'highlighted', e.target.checked)}
+                        />
+                        Highlighted
+                    </label>
+                </div>
+                {isChanged && <div className="change-indicator">📝 Changes pending...</div>}
+            </div>
+        </div>
+    );
+}
+
+function calculateStats(mapData) {
+    const planets = mapData.planets || {};
+    const sectors = mapData.sectors || {};
+
+    const planetStats = {};
+    const sectorStats = {};
+    const factionStats = {};
+
+    // Planet stats
+    Object.values(planets).forEach(p => {
+        const faction = p.faction || 'Unknown';
+        planetStats[faction] = (planetStats[faction] || 0) + 1;
+    });
+
+    // Sector stats
+    Object.values(sectors).forEach(s => {
+        const controller = s.controlledBy || 'Unknown';
+        sectorStats[controller] = (sectorStats[controller] || 0) + 1;
+    });
+
+    // Faction balance
+    factionStats['Republic'] = `${planetStats.Republic || 0}P / ${sectorStats.Republic || 0}S`;
+    factionStats['Separatists'] = `${planetStats.Separatists || 0}P / ${sectorStats.Separatists || 0}S`;
+
+    return {
+        planets: { 'Total Planets': Object.keys(planets).length, ...planetStats },
+        sectors: { 'Total Sectors': Object.keys(sectors).length, ...sectorStats },
+        factions: factionStats
+    };
+}
+
+function getFactionColor(faction) {
+    const colors = {
+        'Republic': '#4fc3f7',
+        'Separatists': '#f44336',
+        'Mandalore': '#ff9800',
+        'Neutral': '#888',
+        'Independent': '#888',
+        'Contested': '#ff9800'
+    };
+    return colors[faction] || '#888';
+}
+
+function getReputationColor(reputation) {
+    if (reputation >= 100) return '#4caf50';
+    if (reputation >= 80) return '#ff9800';
+    return '#f44336';
+}
+
+export default MapDataTab;
