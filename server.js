@@ -83,14 +83,6 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Serve React build in production only
-if (process.env.NODE_ENV === 'production') {
-    app.use(express.static(path.join(__dirname, 'client/build')));
-    app.get('*', (req, res) => {
-        res.sendFile(path.join(__dirname, 'client/build/index.html'));
-    });
-}
-
 app.listen(PORT, () => {
     console.log(`🚀 Space Map Admin Panel server running on port ${PORT}`);
     console.log(`📊 Dashboard available at http://localhost:${PORT}`);
