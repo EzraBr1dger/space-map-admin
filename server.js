@@ -54,8 +54,8 @@ app.use('/api/', limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files (for your frontend)
-app.use(express.static(path.join(__dirname, 'public')));
+// Serve React build files
+app.use(express.static(path.join(__dirname, 'client/build')));
 
 // API Routes
 app.use('/api/auth', authRoutes);
@@ -83,13 +83,10 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Serve React app in production
-if (process.env.NODE_ENV === 'production') {
-    app.use(express.static(path.join(__dirname, 'client/build')));
-    app.get('*', (req, res) => {
-        res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
-    });
-}
+// Serve React app (catch-all route for client-side routing)
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
+});
 
 app.listen(PORT, () => {
     console.log(`🚀 Space Map Admin Panel server running on port ${PORT}`);
