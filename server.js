@@ -78,14 +78,6 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Serve static files from React build
-app.use(express.static(path.join(__dirname, 'client/build')));
-
-// Catch-all: send React app for any non-API routes (MUST be last)
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
-});
-
 app.listen(PORT, () => {
     console.log(`🚀 Space Map Admin Panel server running on port ${PORT}`);
     console.log(`📊 Dashboard available at http://localhost:${PORT}`);
