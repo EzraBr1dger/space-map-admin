@@ -80,9 +80,20 @@ const FirebaseHelpers = {
     },
 
     async getMapData() {
-        try {
-            const snapshot = await db.ref('mapData').once('value');
-            return snapshot.val();
+    try {
+        const snapshot = await db.ref('mapData').once('value');
+        const data = snapshot.val();
+        
+        // Convert efficiency to reputation for display
+        if (data && data.planets) {
+            for (let planetName in data.planets) {
+                if (data.planets[planetName].efficiency !== undefined) {
+                    data.planets[planetName].reputation = data.planets[planetName].efficiency;
+                }
+            }
+        }
+        
+            return data;
         } catch (error) {
             console.error('Error getting map data:', error);
             return null;
@@ -123,11 +134,16 @@ const FirebaseHelpers = {
 
     // Update specific planet
     async updatePlanet(planetName, planetData) {
-        try {
-            // Write to the correct nested path
-            await db.ref(`mapData/planets/${planetName}`).set(planetData);
-            console.log(`✅ Planet ${planetName} updated`);
-            return true;
+    try {
+        // Convert reputation back to efficiency for storage
+        if (planetData.reputation !== undefined) {
+            planetData.efficiency = planetData.reputation;
+            delete planetData.reputation;
+        }
+        
+        await db.ref(`mapData/planets/${planetName}`).set(planetData);
+        console.log(`✅ Planet ${planetName} updated`);
+        return true;
         } catch (error) {
             console.error(`Error updating planet ${planetName}:`, error);
             throw error;
