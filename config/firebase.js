@@ -80,19 +80,20 @@ const FirebaseHelpers = {
     },
 
     async getMapData() {
-    try {
-        const snapshot = await db.ref('mapData').once('value');
-        const data = snapshot.val();
-        
-        // Convert efficiency to reputation for display
-        if (data && data.planets) {
-            for (let planetName in data.planets) {
-                if (data.planets[planetName].efficiency !== undefined) {
-                    data.planets[planetName].reputation = data.planets[planetName].efficiency;
+        try {
+            const snapshot = await db.ref('mapData').once('value');
+            const data = snapshot.val();
+            
+            // Convert efficiency to reputation for display (ONLY if reputation doesn't exist)
+            if (data && data.planets) {
+                for (let planetName in data.planets) {
+                    // Only set reputation from efficiency if reputation is missing
+                    if (data.planets[planetName].reputation === undefined && data.planets[planetName].efficiency !== undefined) {
+                        data.planets[planetName].reputation = data.planets[planetName].efficiency;
+                    }
                 }
             }
-        }
-        
+            
             return data;
         } catch (error) {
             console.error('Error getting map data:', error);
