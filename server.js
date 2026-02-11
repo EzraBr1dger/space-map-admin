@@ -74,7 +74,7 @@ app.get('/api/health', (req, res) => {
     });
 });
 
-// Error handling middleware (MUST come before catch-all routes)
+// Error handling middleware
 app.use((err, req, res, next) => {
     console.error('Error:', err.stack);
     res.status(500).json({ 
@@ -83,7 +83,10 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Serve React app (catch-all route for client-side routing)
+// Serve static files FIRST
+app.use(express.static(path.join(__dirname, 'client/build')));
+
+// THEN catch-all for client-side routing (MUST be last)
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
 });
