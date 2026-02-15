@@ -2,6 +2,14 @@ import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import './MapDataTab.css';
 
+const BUILDING_TYPES = {
+    'Planetary Defenses': { cost: 750000, days: 3, description: 'Physical Emplacements of Turbo lasers and defenses' },
+    'Production Facility': { cost: 500000, days: 2, description: '+50 Production' },
+    'Research Facility': { cost: 650000, days: 3, description: '+100 per week research to new technology (Total cap of 5000)' },
+    'Trade Hub': { cost: 400000, days: 2, description: '+20% Credits' },
+    'Civil Infrastructure': { cost: 250000, days: 1, description: 'Reduces planetary unrest (affects lore events)' }
+};
+
 function MapDataTab() {
     const [mapData, setMapData] = useState({ planets: {}, sectors: {} });
     const [loading, setLoading] = useState(true);
