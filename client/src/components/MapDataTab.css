@@ -15,6 +15,10 @@
     flex-wrap: wrap;
 }
 
+.building-selector select option {
+    color: #000;
+}
+
 .btn-refresh {
     background: #4caf50;
 }
