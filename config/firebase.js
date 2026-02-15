@@ -79,10 +79,11 @@ const FirebaseHelpers = {
         }
     },
 
-        // Get faction credits
+    // Get faction credits
     async getFactionCredits(faction) {
         try {
-            const snapshot = await db.ref(`factionStats/${faction}/credits`).once('value');
+            // Credits are stored in globalSupply/items/Credits/{faction}
+            const snapshot = await db.ref(`globalSupply/items/Credits/${faction}`).once('value');
             return snapshot.val() || 0;
         } catch (error) {
             console.error(`Error getting ${faction} credits:`, error);
@@ -102,7 +103,7 @@ const FirebaseHelpers = {
             // TODO: UNCOMMENT WHEN READY TO ACTUALLY DEDUCT CREDITS
             /*
             const newCredits = currentCredits - amount;
-            await db.ref(`factionStats/${faction}/credits`).set(newCredits);
+            await db.ref(`globalSupply/items/Credits/${faction}`).set(newCredits);
             console.log(`✅ Deducted ${amount} credits from ${faction}. New balance: ${newCredits}`);
             */
             
