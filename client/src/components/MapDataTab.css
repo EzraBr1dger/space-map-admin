@@ -107,6 +107,70 @@
     gap: 15px;
 }
 
+.building-section {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.building-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.building-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+    background: rgba(100, 255, 218, 0.05);
+    border-radius: 5px;
+}
+
+.btn-start-building {
+    background: #4caf50;
+    padding: 8px 15px;
+    border: none;
+    border-radius: 5px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-start-building:hover {
+    background: #388e3c;
+}
+
+.btn-cancel-building {
+    background: #f44336;
+    padding: 8px 15px;
+    border: none;
+    border-radius: 5px;
+    color: white;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: all 0.3s ease;
+}
+
+.btn-cancel-building:hover {
+    background: #d32f2f;
+}
+
+.current-building,
+.current-building-edit {
+    padding: 10px;
+    background: rgba(100, 255, 218, 0.1);
+    border-radius: 5px;
+    margin-top: 5px;
+}
+
+.building-details {
+    font-size: 0.9em;
+    color: #888;
+    margin-top: 5px;
+}
+
 .planet-card,
 .sector-card {
     background: rgba(255, 255, 255, 0.05);

@@ -114,6 +114,201 @@ function MapDataTab() {
         }
     };
 
+    const addBuilding = async (planetName, buildingType) => {
+        const building = BUILDING_TYPES[buildingType];
+        if (!building) return;
+
+        try {
+            showMessage('success', `Starting construction of ${buildingType}...`);
+            
+            // TODO: Uncomment when ready to deduct credits
+            /*
+            const response = await api.post(`/mapdata/planet/${encodeURIComponent(planetName)}/building`, {
+                buildingType,
+                cost: building.cost,
+                days: building.days
+            });
+            */
+            
+            // For testing - just update local state
+            const completionDate = new Date();
+            completionDate.setDate(completionDate.getDate() + building.days);
+            
+            setMapData(prev => ({
+                ...prev,
+                planets: {
+                    ...prev.planets,
+                    [planetName]: {
+                        ...prev.planets[planetName],
+                        currentBuilding: {
+                            type: buildingType,
+                            startDate: new Date().toISOString(),
+                            completionDate: completionDate.toISOString(),
+                            cost: building.cost
+                        }
+                    }
+                }
+            }));
+            
+            showMessage('success', `${buildingType} construction started! Will complete in ${building.days} day(s). Cost: ${building.cost.toLocaleString()} credits (NOT DEDUCTED - TESTING MODE)`);
+        } catch (error) {
+            showMessage('error', error.response?.data?.error || 'Failed to start building construction');
+        }
+    };
+
+    const cancelBuilding = async (planetName) => {
+        try {
+            showMessage('success', 'Cancelling building construction...');
+            
+            // TODO: Uncomment when ready
+            /*
+            await api.delete(`/mapdata/planet/${encodeURIComponent(planetName)}/building`);
+            */
+            
+            // For testing - just update local state
+            setMapData(prev => ({
+                ...prev,
+                planets: {
+                    ...prev.planets,
+                    [planetName]: {
+                        ...prev.planets[planetName],
+                        currentBuilding: null
+                    }
+                }
+            }));
+            
+            showMessage('success', 'Building construction cancelled');
+        } catch (error) {
+            showMessage('error', error.response?.data?.error || 'Failed to cancel building');
+        }
+    };
+
+    function PlanetCard({ name, planet, editMode, isChanged, onUpdate }) {
+        const reputation = (planet.reputation || planet.efficiency || 1.0) * 100;
+        const [selectedBuilding, setSelectedBuilding] = useState('');
+
+        if (!editMode) {
+            return (
+                <div className={`planet-card faction-${planet.faction?.toLowerCase()}`}>
+                    <div className="planet-name">{name}</div>
+                    <div className="planet-info">
+                        <div><strong>Faction:</strong> <span style={{ color: getFactionColor(planet.faction) }}>{planet.faction}</span></div>
+                        <div><strong>Reputation:</strong> <span style={{ color: getReputationColor(reputation) }}>{Math.round(reputation)}%</span></div>
+                        {planet.description && <div><strong>Description:</strong> {planet.description}</div>}
+                        {planet.customFactionImage && <div><strong>Custom Icon:</strong> {planet.customFactionImage}</div>}
+                        {planet.currentBuilding && (
+                            <div className="current-building">
+                                <strong>Building:</strong> {planet.currentBuilding.type}
+                                <div className="building-details">
+                                    Started: {new Date(planet.currentBuilding.startDate).toLocaleDateString()}
+                                    <br />
+                                    Completes: {new Date(planet.currentBuilding.completionDate).toLocaleDateString()}
+                                    <br />
+                                    Cost: {planet.currentBuilding.cost.toLocaleString()} credits
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        return (
+            <div className={`planet-card faction-${planet.faction?.toLowerCase()} ${isChanged ? 'changed' : ''}`}>
+                <div className="planet-name">{name}</div>
+                <div className="planet-edit">
+                    <div className="form-group">
+                        <label>Faction:</label>
+                        <select value={planet.faction} onChange={(e) => onUpdate(name, 'faction', e.target.value)}>
+                            <option value="Republic">Republic</option>
+                            <option value="Separatists">Separatists</option>
+                            <option value="Neutral">Neutral</option>
+                            <option value="Mandalore">Mandalore</option>
+                        </select>
+                    </div>
+                    <div className="form-group">
+                        <label>Reputation (%):</label>
+                        <input
+                            type="number"
+                            value={Math.round(reputation)}
+                            onChange={(e) => onUpdate(name, 'reputation', e.target.value)}
+                            min="0"
+                            max="200"
+                        />
+                        <small>100% = normal, 80% = reduced, 120% = bonus</small>
+                    </div>
+                    <div className="form-group">
+                        <label>Description:</label>
+                        <textarea
+                            value={planet.description || ''}
+                            onChange={(e) => onUpdate(name, 'description', e.target.value)}
+                            rows="3"
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label>Custom Faction Image ID:</label>
+                        <input
+                            type="text"
+                            value={planet.customFactionImage || ''}
+                            onChange={(e) => onUpdate(name, 'customFactionImage', e.target.value)}
+                            placeholder="rbxassetid://123456789"
+                        />
+                    </div>
+                    
+                    {/* Building Projects Section */}
+                    <div className="form-group building-section">
+                        <label>Building Projects:</label>
+                        {planet.currentBuilding ? (
+                            <div className="current-building-edit">
+                                <div><strong>Current:</strong> {planet.currentBuilding.type}</div>
+                                <div>Completes: {new Date(planet.currentBuilding.completionDate).toLocaleDateString()}</div>
+                                <div>Cost: {planet.currentBuilding.cost.toLocaleString()} credits</div>
+                                <button 
+                                    onClick={() => cancelBuilding(name)} 
+                                    className="btn-cancel-building"
+                                    type="button"
+                                >
+                                    Cancel Building
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="building-selector">
+                                <select 
+                                    value={selectedBuilding} 
+                                    onChange={(e) => setSelectedBuilding(e.target.value)}
+                                >
+                                    <option value="">-- Select Building --</option>
+                                    {Object.entries(BUILDING_TYPES).map(([type, info]) => (
+                                        <option key={type} value={type}>
+                                            {type} - {info.cost.toLocaleString()} credits - {info.days} days
+                                        </option>
+                                    ))}
+                                </select>
+                                {selectedBuilding && (
+                                    <div className="building-info">
+                                        <small>{BUILDING_TYPES[selectedBuilding].description}</small>
+                                        <button 
+                                            onClick={() => {
+                                                addBuilding(name, selectedBuilding);
+                                                setSelectedBuilding('');
+                                            }} 
+                                            className="btn-start-building"
+                                            type="button"
+                                        >
+                                            Start Construction
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                    
+                    {isChanged && <div className="change-indicator">📝 Changes pending...</div>}
+                </div>
+            </div>
+        );
+    }
+
     const recalculateSectors = async () => {
         try {
             showMessage('success', 'Recalculating sector control...');
