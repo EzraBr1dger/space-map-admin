@@ -79,14 +79,17 @@ const FirebaseHelpers = {
         }
     },
 
-    // Get faction credits
+        // Get faction credits (only Republic has credits in globalSupply)
     async getFactionCredits(faction) {
         try {
-            // Credits are stored in globalSupply/items/Credits/{faction}
-            const snapshot = await db.ref(`globalSupply/items/Credits/${faction}`).once('value');
+            if (faction !== 'Republic') {
+                return 0; // Only Republic uses this credit system
+            }
+            
+            const snapshot = await db.ref('globalSupply/items/Credits').once('value');
             return snapshot.val() || 0;
         } catch (error) {
-            console.error(`Error getting ${faction} credits:`, error);
+            console.error(`Error getting credits:`, error);
             throw error;
         }
     },
@@ -94,23 +97,27 @@ const FirebaseHelpers = {
     // Deduct faction credits (COMMENTED OUT FOR TESTING)
     async deductFactionCredits(faction, amount) {
         try {
+            if (faction !== 'Republic') {
+                throw new Error('Only Republic planets can use credits for construction');
+            }
+            
             const currentCredits = await this.getFactionCredits(faction);
             
             if (currentCredits < amount) {
-                throw new Error(`Insufficient credits. ${faction} has ${currentCredits}, needs ${amount}`);
+                throw new Error(`Insufficient credits. Republic has ${currentCredits.toLocaleString()}, needs ${amount.toLocaleString()}`);
             }
             
             // TODO: UNCOMMENT WHEN READY TO ACTUALLY DEDUCT CREDITS
             /*
             const newCredits = currentCredits - amount;
-            await db.ref(`globalSupply/items/Credits/${faction}`).set(newCredits);
-            console.log(`✅ Deducted ${amount} credits from ${faction}. New balance: ${newCredits}`);
+            await db.ref('globalSupply/items/Credits').set(newCredits);
+            console.log(`✅ Deducted ${amount} credits. New balance: ${newCredits}`);
             */
             
-            console.log(`💰 TESTING MODE: Would deduct ${amount} credits from ${faction} (current: ${currentCredits})`);
-            return currentCredits; // Return current credits without deducting
+            console.log(`💰 TESTING MODE: Would deduct ${amount} credits (current: ${currentCredits.toLocaleString()})`);
+            return currentCredits;
         } catch (error) {
-            console.error(`Error deducting credits from ${faction}:`, error);
+            console.error(`Error deducting credits:`, error);
             throw error;
         }
     },
