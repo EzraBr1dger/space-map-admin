@@ -79,6 +79,65 @@ const FirebaseHelpers = {
         }
     },
 
+        // Get faction credits
+    async getFactionCredits(faction) {
+        try {
+            const snapshot = await db.ref(`factionStats/${faction}/credits`).once('value');
+            return snapshot.val() || 0;
+        } catch (error) {
+            console.error(`Error getting ${faction} credits:`, error);
+            throw error;
+        }
+    },
+
+    // Deduct faction credits (COMMENTED OUT FOR TESTING)
+    async deductFactionCredits(faction, amount) {
+        try {
+            const currentCredits = await this.getFactionCredits(faction);
+            
+            if (currentCredits < amount) {
+                throw new Error(`Insufficient credits. ${faction} has ${currentCredits}, needs ${amount}`);
+            }
+            
+            // TODO: UNCOMMENT WHEN READY TO ACTUALLY DEDUCT CREDITS
+            /*
+            const newCredits = currentCredits - amount;
+            await db.ref(`factionStats/${faction}/credits`).set(newCredits);
+            console.log(`✅ Deducted ${amount} credits from ${faction}. New balance: ${newCredits}`);
+            */
+            
+            console.log(`💰 TESTING MODE: Would deduct ${amount} credits from ${faction} (current: ${currentCredits})`);
+            return currentCredits; // Return current credits without deducting
+        } catch (error) {
+            console.error(`Error deducting credits from ${faction}:`, error);
+            throw error;
+        }
+    },
+
+    // Add building to planet
+    async addPlanetBuilding(planetName, buildingData) {
+        try {
+            await db.ref(`mapData/planets/${planetName}/currentBuilding`).set(buildingData);
+            console.log(`✅ Building ${buildingData.type} added to ${planetName}`);
+            return true;
+        } catch (error) {
+            console.error(`Error adding building to ${planetName}:`, error);
+            throw error;
+        }
+    },
+
+    // Cancel planet building
+    async cancelPlanetBuilding(planetName) {
+        try {
+            await db.ref(`mapData/planets/${planetName}/currentBuilding`).remove();
+            console.log(`✅ Building cancelled for ${planetName}`);
+            return true;
+        } catch (error) {
+            console.error(`Error cancelling building for ${planetName}:`, error);
+            throw error;
+        }
+    },
+
     async getMapData() {
         try {
             const snapshot = await db.ref('mapData').once('value');

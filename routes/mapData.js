@@ -73,6 +73,107 @@ router.put('/planet/:planetName', authenticateToken, requireAdmin, async (req, r
     }
 });
 
+// Start building construction on a planet
+router.post('/planet/:planetName/building', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const { planetName } = req.params;
+        const { buildingType, cost, days } = req.body;
+
+        // Get current map data
+        const mapData = await FirebaseHelpers.getMapData();
+        const planet = mapData?.planets?.[planetName];
+
+        if (!planet) {
+            return res.status(404).json({ error: 'Planet not found' });
+        }
+
+        // Check if planet already has a building under construction
+        if (planet.currentBuilding) {
+            return res.status(400).json({ 
+                error: `${planetName} already has ${planet.currentBuilding.type} under construction` 
+            });
+        }
+
+        const faction = planet.faction;
+        if (!faction || (faction !== 'Republic' && faction !== 'Separatists')) {
+            return res.status(400).json({ 
+                error: 'Only Republic and Separatist planets can construct buildings' 
+            });
+        }
+
+        // Check if faction has enough credits (but don't deduct yet)
+        const factionCredits = await FirebaseHelpers.getFactionCredits(faction);
+        if (factionCredits < cost) {
+            return res.status(400).json({ 
+                error: `Insufficient credits. ${faction} has ${factionCredits.toLocaleString()}, needs ${cost.toLocaleString()}` 
+            });
+        }
+
+        // Calculate completion date
+        const completionDate = new Date();
+        completionDate.setDate(completionDate.getDate() + days);
+
+        const buildingData = {
+            type: buildingType,
+            startDate: new Date().toISOString(),
+            completionDate: completionDate.toISOString(),
+            cost: cost
+        };
+
+        // Deduct credits (currently just checks, doesn't deduct)
+        await FirebaseHelpers.deductFactionCredits(faction, cost);
+
+        // Add building to planet
+        await FirebaseHelpers.addPlanetBuilding(planetName, buildingData);
+
+        res.json({ 
+            message: `${buildingType} construction started on ${planetName} (TESTING MODE - Credits not deducted)`,
+            building: buildingData,
+            faction: faction,
+            creditsRemaining: factionCredits // Still showing original amount in testing
+        });
+
+        console.log(`✅ ${buildingType} started on ${planetName} by ${req.user.username}`);
+    } catch (error) {
+        console.error(`Error starting building on ${req.params.planetName}:`, error);
+        res.status(500).json({ error: error.message || 'Failed to start building construction' });
+    }
+});
+
+// Cancel building construction
+router.delete('/planet/:planetName/building', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const { planetName } = req.params;
+
+        // Get current map data
+        const mapData = await FirebaseHelpers.getMapData();
+        const planet = mapData?.planets?.[planetName];
+
+        if (!planet) {
+            return res.status(404).json({ error: 'Planet not found' });
+        }
+
+        if (!planet.currentBuilding) {
+            return res.status(400).json({ 
+                error: `${planetName} has no building under construction` 
+            });
+        }
+
+        // Cancel building
+        await FirebaseHelpers.cancelPlanetBuilding(planetName);
+
+        res.json({ 
+            message: `Building construction cancelled on ${planetName}`,
+            cancelledBuilding: planet.currentBuilding
+        });
+
+        console.log(`✅ Building cancelled on ${planetName} by ${req.user.username}`);
+    } catch (error) {
+        console.error(`Error cancelling building on ${req.params.planetName}:`, error);
+        res.status(500).json({ error: 'Failed to cancel building construction' });
+    }
+});
+
 // Update sector data
 router.put('/sector/:sectorName', authenticateToken, requireAdmin, async (req, res) => {
     try {

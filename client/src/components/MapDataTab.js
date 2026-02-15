@@ -129,36 +129,17 @@ function MapDataTab() {
         try {
             showMessage('success', `Starting construction of ${buildingType}...`);
             
-            // TODO: Uncomment when ready to deduct credits
-            /*
+            // UNCOMMENT THIS:
             const response = await api.post(`/mapdata/planet/${encodeURIComponent(planetName)}/building`, {
                 buildingType,
                 cost: building.cost,
                 days: building.days
             });
-            */
             
-            // For testing - just update local state
-            const completionDate = new Date();
-            completionDate.setDate(completionDate.getDate() + building.days);
+            // Comment out or remove the local state update
+            await loadMapData(); // Reload from server instead
             
-            setMapData(prev => ({
-                ...prev,
-                planets: {
-                    ...prev.planets,
-                    [planetName]: {
-                        ...prev.planets[planetName],
-                        currentBuilding: {
-                            type: buildingType,
-                            startDate: new Date().toISOString(),
-                            completionDate: completionDate.toISOString(),
-                            cost: building.cost
-                        }
-                    }
-                }
-            }));
-            
-            showMessage('success', `${buildingType} construction started! Will complete in ${building.days} day(s). Cost: ${building.cost.toLocaleString()} credits (NOT DEDUCTED - TESTING MODE)`);
+            showMessage('success', response.data.message);
         } catch (error) {
             showMessage('error', error.response?.data?.error || 'Failed to start building construction');
         }
@@ -168,22 +149,10 @@ function MapDataTab() {
         try {
             showMessage('success', 'Cancelling building construction...');
             
-            // TODO: Uncomment when ready
-            /*
+            // UNCOMMENT THIS:
             await api.delete(`/mapdata/planet/${encodeURIComponent(planetName)}/building`);
-            */
             
-            // For testing - just update local state
-            setMapData(prev => ({
-                ...prev,
-                planets: {
-                    ...prev.planets,
-                    [planetName]: {
-                        ...prev.planets[planetName],
-                        currentBuilding: null
-                    }
-                }
-            }));
+            await loadMapData(); // Reload from server
             
             showMessage('success', 'Building construction cancelled');
         } catch (error) {
