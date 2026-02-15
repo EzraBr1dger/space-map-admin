@@ -411,69 +411,6 @@ function StatsSummary({ title, stats }) {
     );
 }
 
-function PlanetCard({ name, planet, editMode, isChanged, onUpdate }) {
-    const reputation = (planet.reputation || planet.efficiency || 1.0) * 100;
-
-    if (!editMode) {
-        return (
-            <div className={`planet-card faction-${planet.faction?.toLowerCase()}`}>
-                <div className="planet-name">{name}</div>
-                <div className="planet-info">
-                    <div><strong>Faction:</strong> <span style={{ color: getFactionColor(planet.faction) }}>{planet.faction}</span></div>
-                    <div><strong>Reputation:</strong> <span style={{ color: getReputationColor(reputation) }}>{Math.round(reputation)}%</span></div>
-                    {planet.description && <div><strong>Description:</strong> {planet.description}</div>}
-                    {planet.customFactionImage && <div><strong>Custom Icon:</strong> {planet.customFactionImage}</div>}
-                </div>
-            </div>
-        );
-    }
-
-    return (
-        <div className={`planet-card faction-${planet.faction?.toLowerCase()} ${isChanged ? 'changed' : ''}`}>
-            <div className="planet-name">{name}</div>
-            <div className="planet-edit">
-                <div className="form-group">
-                    <label>Faction:</label>
-                    <select value={planet.faction} onChange={(e) => onUpdate(name, 'faction', e.target.value)}>
-                        <option value="Republic">Republic</option>
-                        <option value="Separatists">Separatists</option>
-                        <option value="Neutral">Neutral</option>
-                        <option value="Mandalore">Mandalore</option>
-                    </select>
-                </div>
-                <div className="form-group">
-                    <label>Reputation (%):</label>
-                    <input
-                        type="number"
-                        value={Math.round(reputation)}
-                        onChange={(e) => onUpdate(name, 'reputation', e.target.value)}
-                        min="0"
-                        max="200"
-                    />
-                    <small>100% = normal, 80% = reduced, 120% = bonus</small>
-                </div>
-                <div className="form-group">
-                    <label>Description:</label>
-                    <textarea
-                        value={planet.description || ''}
-                        onChange={(e) => onUpdate(name, 'description', e.target.value)}
-                        rows="3"
-                    />
-                </div>
-                <div className="form-group">
-                    <label>Custom Faction Image ID:</label>
-                    <input
-                        type="text"
-                        value={planet.customFactionImage || ''}
-                        onChange={(e) => onUpdate(name, 'customFactionImage', e.target.value)}
-                        placeholder="rbxassetid://123456789"
-                    />
-                </div>
-                {isChanged && <div className="change-indicator">📝 Changes pending...</div>}
-            </div>
-        </div>
-    );
-}
 
 function SectorCard({ name, sector, editMode, isChanged, onUpdate }) {
     if (!editMode) {
