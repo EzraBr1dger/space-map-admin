@@ -171,45 +171,18 @@ function FleetTab() {
                         {/* Show travel time but don't allow editing */}
                         <span className="travel-time">Travel Time: {travelDays} day{travelDays !== 1 ? 's' : ''}</span>
                         
-                        {selectedVenators.length > 0 && (
-                            <div className="move-panel">
-                                <h4>Move Fleet ({selectedVenators.length} selected)</h4>
-                                <div className="move-controls">
-                                    <select value={destination} onChange={(e) => {
-                                        setDestination(e.target.value);
-                                        // Auto-calculate travel days when destination changes
-                                        if (e.target.value && venators[selectedVenators[0]]) {
-                                            const from = venators[selectedVenators[0]].currentPlanet;
-                                            const days = calculateTravelDays(from, e.target.value);
-                                            setTravelDays(days);
-                                        }
-                                    }}>
-                                        <option value="">-- Select Destination --</option>
-                                        {planets.map(planet => (
-                                            <option key={planet} value={planet}>{planet}</option>
-                                        ))}
-                                    </select>
-                                    
-                                    {/* Show travel time but don't allow editing */}
-                                    <span className="travel-time">Travel Time: {travelDays} day{travelDays !== 1 ? 's' : ''}</span>
-                                    
-                                    {/* Only show instant move for admin role */}
-                                    {user?.role === 'admin' && (
-                                        <label>
-                                            <input
-                                                type="checkbox"
-                                                checked={instantMove}
-                                                onChange={(e) => setInstantMove(e.target.checked)}
-                                            />
-                                            Instant Move (Admin Only)
-                                        </label>
-                                    )}
-                                    
-                                    <button onClick={moveFleet} className="btn-move">Move Fleet</button>
-                                </div>
-                            </div>
+                        {/* Only show instant move for admin role */}
+                        {user?.role === 'admin' && (
+                            <label>
+                                <input
+                                    type="checkbox"
+                                    checked={instantMove}
+                                    onChange={(e) => setInstantMove(e.target.checked)}
+                                />
+                                Instant Move (Admin Only)
+                            </label>
                         )}
-
+                        
                         <button onClick={moveFleet} className="btn-move">Move Fleet</button>
                     </div>
                 </div>
