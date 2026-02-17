@@ -226,7 +226,7 @@ const FirebaseHelpers = {
             console.error('Error deleting venator:', error);
             throw error;
         }
-    }
+    },
 
     async getMapData() {
         try {
