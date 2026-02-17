@@ -52,23 +52,17 @@ function FleetTab() {
         const entries = Object.entries(venators);
         
         if (sortBy === 'battalion' && sortValue) {
-            return entries.sort((a, b) => {
-                const aMatch = a[1].battalion === sortValue;
-                const bMatch = b[1].battalion === sortValue;
-                if (aMatch && !bMatch) return -1;
-                if (!aMatch && bMatch) return 1;
-                return 0;
-            });
+            // Separate matching and non-matching
+            const matched = entries.filter(([_, v]) => v.battalion === sortValue);
+            const unmatched = entries.filter(([_, v]) => v.battalion !== sortValue);
+            return [...matched, ...unmatched]; // Matched first, then rest
         }
         
         if (sortBy === 'planet' && sortValue) {
-            return entries.sort((a, b) => {
-                const aMatch = a[1].currentPlanet === sortValue;
-                const bMatch = b[1].currentPlanet === sortValue;
-                if (aMatch && !bMatch) return -1;
-                if (!aMatch && bMatch) return 1;
-                return 0;
-            });
+            // Separate matching and non-matching
+            const matched = entries.filter(([_, v]) => v.currentPlanet === sortValue);
+            const unmatched = entries.filter(([_, v]) => v.currentPlanet !== sortValue);
+            return [...matched, ...unmatched]; // Matched first, then rest
         }
         
         return entries; // Default order
