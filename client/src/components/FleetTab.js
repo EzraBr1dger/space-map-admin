@@ -76,6 +76,34 @@ function FleetTab() {
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState({ type: '', text: '' });
     const [editingVenator, setEditingVenator] = useState(null);
+    const [sortBy, setSortBy] = useState('default'); // ADD THIS
+    const [sortValue, setSortValue] = useState(''); // ADD THIS
+
+    const getSortedVenators = () => {
+        const entries = Object.entries(venators);
+        
+        if (sortBy === 'battalion' && sortValue) {
+            return entries.sort((a, b) => {
+                const aMatch = a[1].battalion === sortValue;
+                const bMatch = b[1].battalion === sortValue;
+                if (aMatch && !bMatch) return -1;
+                if (!aMatch && bMatch) return 1;
+                return 0;
+            });
+        }
+        
+        if (sortBy === 'planet' && sortValue) {
+            return entries.sort((a, b) => {
+                const aMatch = a[1].currentPlanet === sortValue;
+                const bMatch = b[1].currentPlanet === sortValue;
+                if (aMatch && !bMatch) return -1;
+                if (!aMatch && bMatch) return 1;
+                return 0;
+            });
+        }
+        
+        return entries; // Default order
+    };
 
     useEffect(() => {
         loadData();
