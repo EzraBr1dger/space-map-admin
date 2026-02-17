@@ -152,10 +152,18 @@
     color: #fff;
 }
 
+.travel-time {
+    color: #64ffda;
+    font-weight: bold;
+    padding: 8px 15px;
+    background: rgba(100, 255, 218, 0.1);
+    border-radius: 5px;
+}
+
 .move-controls select option,
 .modal-content select option {
     background: #1a1a2e;
-    color: #000000;
+    color: #ffffff;
 }
 
 .modal-actions {

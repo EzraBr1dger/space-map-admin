@@ -1,10 +1,40 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import './FleetTab.css';
+import { useAuth } from '../context/AuthContext';
 
 const BATTALIONS = ['501st', '212th', '104th', '91st', '41st Elite', '21st', 'Coruscant Guard', 'Unassigned'];
 
+const PLANET_DISTANCES = {
+    // Core Worlds (close together)
+    'Coruscant-Kamino': 2,
+    'Coruscant-Naboo': 1,
+    'Coruscant-Alderaan': 1,
+    
+    // Mid Rim
+    'Coruscant-Kashyyyk': 3,
+    'Coruscant-Onderon': 4,
+    
+    // Outer Rim (far)
+    'Coruscant-Geonosis': 5,
+    'Coruscant-Ryloth': 6,
+    'Coruscant-Tatooine': 7,
+    'Coruscant-Mustafar': 7,
+};
+
+// Function to calculate travel days
+const calculateTravelDays = (from, to) => {
+    if (from === to) return 0;
+    
+    // Check both directions
+    const key1 = `${from}-${to}`;
+    const key2 = `${to}-${from}`;
+    
+    return PLANET_DISTANCES[key1] || PLANET_DISTANCES[key2] || 5; // Default 5 days
+};
+
 function FleetTab() {
+    const { user } = useAuth();
     const [venators, setVenators] = useState({});
     const [totalCapitalShips, setTotalCapitalShips] = useState(0);
     const [planets, setPlanets] = useState([]);
@@ -123,28 +153,63 @@ function FleetTab() {
                 <div className="move-panel">
                     <h4>Move Fleet ({selectedVenators.length} selected)</h4>
                     <div className="move-controls">
-                        <select value={destination} onChange={(e) => setDestination(e.target.value)}>
+                        <select value={destination} onChange={(e) => {
+                            setDestination(e.target.value);
+                            // Auto-calculate travel days when destination changes
+                            if (e.target.value && venators[selectedVenators[0]]) {
+                                const from = venators[selectedVenators[0]].currentPlanet;
+                                const days = calculateTravelDays(from, e.target.value);
+                                setTravelDays(days);
+                            }
+                        }}>
                             <option value="">-- Select Destination --</option>
                             {planets.map(planet => (
                                 <option key={planet} value={planet}>{planet}</option>
                             ))}
                         </select>
-                        <input
-                            type="number"
-                            min="1"
-                            max="30"
-                            value={travelDays}
-                            onChange={(e) => setTravelDays(parseInt(e.target.value))}
-                            placeholder="Travel days"
-                        />
-                        <label>
-                            <input
-                                type="checkbox"
-                                checked={instantMove}
-                                onChange={(e) => setInstantMove(e.target.checked)}
-                            />
-                            Instant Move (Admin Only)
-                        </label>
+                        
+                        {/* Show travel time but don't allow editing */}
+                        <span className="travel-time">Travel Time: {travelDays} day{travelDays !== 1 ? 's' : ''}</span>
+                        
+                        {selectedVenators.length > 0 && (
+                            <div className="move-panel">
+                                <h4>Move Fleet ({selectedVenators.length} selected)</h4>
+                                <div className="move-controls">
+                                    <select value={destination} onChange={(e) => {
+                                        setDestination(e.target.value);
+                                        // Auto-calculate travel days when destination changes
+                                        if (e.target.value && venators[selectedVenators[0]]) {
+                                            const from = venators[selectedVenators[0]].currentPlanet;
+                                            const days = calculateTravelDays(from, e.target.value);
+                                            setTravelDays(days);
+                                        }
+                                    }}>
+                                        <option value="">-- Select Destination --</option>
+                                        {planets.map(planet => (
+                                            <option key={planet} value={planet}>{planet}</option>
+                                        ))}
+                                    </select>
+                                    
+                                    {/* Show travel time but don't allow editing */}
+                                    <span className="travel-time">Travel Time: {travelDays} day{travelDays !== 1 ? 's' : ''}</span>
+                                    
+                                    {/* Only show instant move for admin role */}
+                                    {user?.role === 'admin' && (
+                                        <label>
+                                            <input
+                                                type="checkbox"
+                                                checked={instantMove}
+                                                onChange={(e) => setInstantMove(e.target.checked)}
+                                            />
+                                            Instant Move (Admin Only)
+                                        </label>
+                                    )}
+                                    
+                                    <button onClick={moveFleet} className="btn-move">Move Fleet</button>
+                                </div>
+                            </div>
+                        )}
+
                         <button onClick={moveFleet} className="btn-move">Move Fleet</button>
                     </div>
                 </div>
