@@ -6,6 +6,7 @@ const BATTALIONS = ['501st', '212th', '104th', '91st', '41st Elite', '21st', 'Co
 
 function FleetTab() {
     const [venators, setVenators] = useState({});
+    const [totalCapitalShips, setTotalCapitalShips] = useState(0);
     const [planets, setPlanets] = useState([]);
     const [selectedVenators, setSelectedVenators] = useState([]);
     const [destination, setDestination] = useState('');
@@ -13,16 +14,7 @@ function FleetTab() {
     const [instantMove, setInstantMove] = useState(false);
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState({ type: '', text: '' });
-    const [showAddModal, setShowAddModal] = useState(false);
     const [editingVenator, setEditingVenator] = useState(null);
-
-    // New venator form
-    const [newVenator, setNewVenator] = useState({
-        customName: '',
-        battalion: 'Unassigned',
-        commander: '',
-        startingPlanet: 'Coruscant'
-    });
 
     useEffect(() => {
         loadData();
@@ -36,6 +28,7 @@ function FleetTab() {
             ]);
             
             setVenators(venatorRes.data.venators || {});
+            setTotalCapitalShips(venatorRes.data.totalCapitalShips || 0);
             setPlanets(Object.keys(mapRes.data.planets || {}));
             setLoading(false);
         } catch (error) {
@@ -93,26 +86,13 @@ function FleetTab() {
         }
     };
 
-    const addVenator = async () => {
-        try {
-            await api.post('/fleet', newVenator);
-            showMessage('success', 'Venator added successfully');
-            setShowAddModal(false);
-            setNewVenator({
-                customName: '',
-                battalion: 'Unassigned',
-                commander: '',
-                startingPlanet: 'Coruscant'
-            });
-            await loadData();
-        } catch (error) {
-            showMessage('error', error.response?.data?.error || 'Failed to add venator');
-        }
-    };
-
     const updateVenator = async () => {
         try {
-            await api.put(`/fleet/${editingVenator.id}`, editingVenator);
+            await api.put(`/fleet/${editingVenator.id}`, {
+                customName: editingVenator.customName,
+                battalion: editingVenator.battalion,
+                commander: editingVenator.commander
+            });
             showMessage('success', 'Venator updated successfully');
             setEditingVenator(null);
             await loadData();
@@ -121,23 +101,12 @@ function FleetTab() {
         }
     };
 
-    const deleteVenator = async (venatorId) => {
-        if (!window.confirm('Are you sure you want to delete this venator?')) return;
-
-        try {
-            await api.delete(`/fleet/${venatorId}`);
-            showMessage('success', 'Venator deleted successfully');
-            await loadData();
-        } catch (error) {
-            showMessage('error', error.response?.data?.error || 'Failed to delete venator');
-        }
-    };
-
     if (loading) return <div className="loading">Loading fleet data...</div>;
 
     return (
         <div className="fleet-tab">
             <h3>Fleet Composition Management</h3>
+            <p className="fleet-info">Total Capital Ships in Fleet: <strong>{totalCapitalShips}</strong></p>
 
             {message.text && (
                 <div className={`message ${message.type}`}>
@@ -146,7 +115,6 @@ function FleetTab() {
             )}
 
             <div className="fleet-controls">
-                <button onClick={() => setShowAddModal(true)} className="btn-add">Add New Venator</button>
                 <button onClick={selectAll} className="btn-select-all">Select All</button>
                 <button onClick={deselectAll} className="btn-deselect-all">Deselect All</button>
             </div>
@@ -175,7 +143,6 @@ function FleetTab() {
                         </div>
                         <div className="venator-actions">
                             <button onClick={() => setEditingVenator({ id, ...venator })} className="btn-edit">Edit</button>
-                            <button onClick={() => deleteVenator(id)} className="btn-delete">Delete</button>
                         </div>
                     </div>
                 ))}
@@ -208,43 +175,6 @@ function FleetTab() {
                             Instant Move (Admin Only)
                         </label>
                         <button onClick={moveFleet} className="btn-move">Move Fleet</button>
-                    </div>
-                </div>
-            )}
-
-            {/* Add Venator Modal */}
-            {showAddModal && (
-                <div className="modal">
-                    <div className="modal-content">
-                        <h4>Add New Venator</h4>
-                        <input
-                            type="text"
-                            placeholder="Custom Name (e.g., Resolute)"
-                            value={newVenator.customName}
-                            onChange={(e) => setNewVenator({ ...newVenator, customName: e.target.value })}
-                        />
-                        <select
-                            value={newVenator.battalion}
-                            onChange={(e) => setNewVenator({ ...newVenator, battalion: e.target.value })}
-                        >
-                            {BATTALIONS.map(b => <option key={b} value={b}>{b}</option>)}
-                        </select>
-                        <input
-                            type="text"
-                            placeholder="Commander (e.g., Anakin Skywalker)"
-                            value={newVenator.commander}
-                            onChange={(e) => setNewVenator({ ...newVenator, commander: e.target.value })}
-                        />
-                        <select
-                            value={newVenator.startingPlanet}
-                            onChange={(e) => setNewVenator({ ...newVenator, startingPlanet: e.target.value })}
-                        >
-                            {planets.map(p => <option key={p} value={p}>{p}</option>)}
-                        </select>
-                        <div className="modal-actions">
-                            <button onClick={addVenator} className="btn-save">Add Venator</button>
-                            <button onClick={() => setShowAddModal(false)} className="btn-cancel">Cancel</button>
-                        </div>
                     </div>
                 </div>
             )}

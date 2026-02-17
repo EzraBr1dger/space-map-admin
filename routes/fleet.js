@@ -4,40 +4,37 @@ const { FirebaseHelpers } = require('../config/firebase');
 
 const router = express.Router();
 
-// Get all venators
+// Get all venators (auto-generated based on Capital Ships count)
 router.get('/', authenticateToken, requireAdmiralOrAdmin, async (req, res) => {
     try {
+        const supplyData = await FirebaseHelpers.getSupplyData();
+        const capitalShips = Math.floor(supplyData?.items?.['Capital Ships'] || 0);
+        
         const venators = await FirebaseHelpers.getVenators();
-        res.json({ venators: venators || {} });
+        
+        // Auto-generate venators to match capital ships count
+        const generatedVenators = {};
+        for (let i = 1; i <= capitalShips; i++) {
+            const venatorId = `venator-${i}`;
+            generatedVenators[venatorId] = venators[venatorId] || {
+                customName: `Venator ${i}`,
+                battalion: 'Unassigned',
+                commander: '',
+                currentPlanet: 'Coruscant',
+                travelingTo: null,
+                departureDate: null,
+                arrivalDate: null,
+                created: new Date().toISOString()
+            };
+        }
+        
+        res.json({ 
+            venators: generatedVenators,
+            totalCapitalShips: capitalShips
+        });
     } catch (error) {
         console.error('Error fetching venators:', error);
         res.status(500).json({ error: 'Failed to fetch venators' });
-    }
-});
-
-// Add new venator
-router.post('/', authenticateToken, requireAdmiralOrAdmin, async (req, res) => {
-    try {
-        const { customName, battalion, commander, startingPlanet } = req.body;
-        
-        const venator = await FirebaseHelpers.addVenator({
-            customName,
-            battalion,
-            commander,
-            currentPlanet: startingPlanet,
-            travelingTo: null,
-            departureDate: null,
-            arrivalDate: null,
-            created: new Date().toISOString()
-        });
-
-        res.json({ 
-            message: 'Venator created successfully',
-            venator
-        });
-    } catch (error) {
-        console.error('Error creating venator:', error);
-        res.status(500).json({ error: 'Failed to create venator' });
     }
 });
 
@@ -70,11 +67,18 @@ router.post('/move', authenticateToken, requireAdmiralOrAdmin, async (req, res) 
     }
 });
 
-// Update venator details
+// Update venator details (name, battalion, commander only)
 router.put('/:venatorId', authenticateToken, requireAdmiralOrAdmin, async (req, res) => {
     try {
         const { venatorId } = req.params;
-        const updateData = req.body;
+        const { customName, battalion, commander } = req.body;
+
+        // Only allow updating these specific fields
+        const updateData = {
+            customName,
+            battalion,
+            commander
+        };
 
         await FirebaseHelpers.updateVenator(venatorId, updateData);
 
@@ -84,22 +88,6 @@ router.put('/:venatorId', authenticateToken, requireAdmiralOrAdmin, async (req, 
     } catch (error) {
         console.error('Error updating venator:', error);
         res.status(500).json({ error: 'Failed to update venator' });
-    }
-});
-
-// Delete venator
-router.delete('/:venatorId', authenticateToken, requireAdmiralOrAdmin, async (req, res) => {
-    try {
-        const { venatorId } = req.params;
-
-        await FirebaseHelpers.deleteVenator(venatorId);
-
-        res.json({ 
-            message: 'Venator deleted successfully'
-        });
-    } catch (error) {
-        console.error('Error deleting venator:', error);
-        res.status(500).json({ error: 'Failed to delete venator' });
     }
 });
 

@@ -158,22 +158,6 @@ const FirebaseHelpers = {
         }
     },
 
-    // Add new venator
-    async addVenator(venatorData) {
-        try {
-            const venators = await this.getVenators();
-            const nextId = Object.keys(venators).length + 1;
-            const venatorId = `venator-${nextId}`;
-            
-            await db.ref(`venators/${venatorId}`).set(venatorData);
-            console.log(`✅ Venator ${venatorId} created`);
-            return { id: venatorId, ...venatorData };
-        } catch (error) {
-            console.error('Error adding venator:', error);
-            throw error;
-        }
-    },
-
     // Move venators
     async moveVenators(venatorIds, destination, travelDays, instantMove = false) {
         try {
@@ -216,17 +200,33 @@ const FirebaseHelpers = {
         }
     },
 
-    // Delete venator
+    // Delete venator (also reduces Capital Ships count)
     async deleteVenator(venatorId) {
         try {
+            // Remove venator from database
             await db.ref(`venators/${venatorId}`).remove();
-            console.log(`✅ Venator ${venatorId} deleted`);
+            
+            // Reduce Capital Ships count by 1
+            const supplyData = await this.getSupplyData();
+            if (supplyData && supplyData.items && supplyData.items['Capital Ships']) {
+                supplyData.items['Capital Ships'] = Math.max(0, supplyData.items['Capital Ships'] - 1);
+                
+                // Recalculate total
+                supplyData.totalSupply = 0;
+                for (const resource in supplyData.items) {
+                    supplyData.totalSupply += supplyData.items[resource];
+                }
+                
+                await this.updateSupplyData(supplyData);
+            }
+            
+            console.log(`✅ Venator ${venatorId} deleted and Capital Ships reduced by 1`);
             return true;
         } catch (error) {
             console.error('Error deleting venator:', error);
             throw error;
         }
-    },
+    }
 
     async getMapData() {
         try {
