@@ -5,6 +5,7 @@ import SuppliesTab from '../components/SuppliesTab';
 import MapDataTab from '../components/MapDataTab';
 import AnnouncementsTab from '../components/AnnouncementsTab';
 import ActionsTab from '../components/ActionsTab';
+import FleetTab from '../components/FleetTab';
 import './Dashboard.css';
 
 function Dashboard() {
@@ -14,10 +15,15 @@ function Dashboard() {
     const { user, logout } = useAuth();
 
     useEffect(() => {
+        // If user is admiral, set fleet tab as default
+        if (user?.role === 'admiral') {
+            setActiveTab('fleet');
+        }
+        
         loadStats();
         const interval = setInterval(loadStats, 30000); // Refresh every 30s
         return () => clearInterval(interval);
-    }, []);
+    }, [user]);
 
     const loadStats = async () => {
         try {
@@ -30,6 +36,30 @@ function Dashboard() {
         }
     };
 
+    // Admiral sees different dashboard
+    if (user?.role === 'admiral') {
+        return (
+            <div className="dashboard">
+                <div className="container">
+                    <div className="navbar">
+                        <div className="user-info">
+                            Welcome, Admiral <span>{user?.username}</span>
+                        </div>
+                        <button className="logout-btn" onClick={logout}>Logout</button>
+                    </div>
+
+                    <div className="header">
+                        <h1>Fleet Composition Management</h1>
+                        <p>Venator Star Destroyer Command & Control</p>
+                    </div>
+
+                    <FleetTab />
+                </div>
+            </div>
+        );
+    }
+
+    // Admin sees full dashboard
     if (loading) return <div className="loading">Loading statistics...</div>;
     if (!stats) return <div className="loading">No data available</div>;
 
@@ -96,6 +126,12 @@ function Dashboard() {
                             Map Data
                         </button>
                         <button 
+                            className={`tab ${activeTab === 'fleet' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('fleet')}
+                        >
+                            Fleet Composition
+                        </button>
+                        <button 
                             className={`tab ${activeTab === 'actions' ? 'active' : ''}`}
                             onClick={() => setActiveTab('actions')}
                         >
@@ -112,6 +148,7 @@ function Dashboard() {
                     <div className="tab-content">
                         {activeTab === 'supplies' && <SuppliesTab />}
                         {activeTab === 'mapdata' && <MapDataTab />}
+                        {activeTab === 'fleet' && <FleetTab />}
                         {activeTab === 'actions' && <ActionsTab />}
                         {activeTab === 'announcements' && <AnnouncementsTab />}
                     </div>
