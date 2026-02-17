@@ -1,6 +1,6 @@
 const express = require('express');
 const { authenticateToken, requireAdmiralOrAdmin } = require('../middleware/auth');
-const { FirebaseHelpers } = require('../config/firebase');
+const { FirebaseHelpers, db } = require('../config/firebase');
 
 const router = express.Router();
 
@@ -73,8 +73,16 @@ router.put('/:venatorId', authenticateToken, requireAdmiralOrAdmin, async (req, 
         const { venatorId } = req.params;
         const { customName, battalion, commander } = req.body;
 
-        // Only allow updating these specific fields
+        // Get existing venator data first
+        const existingVenator = (await db().ref(`venators/${venatorId}`).once('value')).val();
+        
+        if (!existingVenator) {
+            return res.status(404).json({ error: 'Venator not found' });
+        }
+
+        // Only update specific fields, preserve everything else
         const updateData = {
+            ...existingVenator, // Keep all existing data
             customName,
             battalion,
             commander

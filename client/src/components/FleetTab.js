@@ -158,10 +158,12 @@ function FleetTab() {
 
     const updateVenator = async () => {
         try {
+            // Only send the editable fields, preserve location data
             await api.put(`/fleet/${editingVenator.id}`, {
                 customName: editingVenator.customName,
                 battalion: editingVenator.battalion,
                 commander: editingVenator.commander
+                // DON'T send currentPlanet, travelingTo, etc - let backend preserve them
             });
             showMessage('success', 'Venator updated successfully');
             setEditingVenator(null);
