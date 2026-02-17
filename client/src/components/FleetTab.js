@@ -33,6 +33,37 @@ const calculateTravelDays = (from, to) => {
     return PLANET_DISTANCES[key1] || PLANET_DISTANCES[key2] || 5; // Default 5 days
 };
 
+// Add these state variables at the top with other useState
+const [sortBy, setSortBy] = useState('default'); // 'default', 'battalion', 'planet'
+const [sortValue, setSortValue] = useState('');
+
+// Add this function to sort venators
+const getSortedVenators = () => {
+    const entries = Object.entries(venators);
+    
+    if (sortBy === 'battalion' && sortValue) {
+        return entries.sort((a, b) => {
+            const aMatch = a[1].battalion === sortValue;
+            const bMatch = b[1].battalion === sortValue;
+            if (aMatch && !bMatch) return -1;
+            if (!aMatch && bMatch) return 1;
+            return 0;
+        });
+    }
+    
+    if (sortBy === 'planet' && sortValue) {
+        return entries.sort((a, b) => {
+            const aMatch = a[1].currentPlanet === sortValue;
+            const bMatch = b[1].currentPlanet === sortValue;
+            if (aMatch && !bMatch) return -1;
+            if (!aMatch && bMatch) return 1;
+            return 0;
+        });
+    }
+    
+    return entries; // Default order
+};
+
 function FleetTab() {
     const { user } = useAuth();
     const [venators, setVenators] = useState({});
@@ -183,11 +214,14 @@ function FleetTab() {
                 
                 <select onChange={(e) => {
                     if (e.target.value) {
-                        selectByBattalion(e.target.value);
-                        e.target.value = ''; // Reset dropdown
+                        setSortBy('battalion');
+                        setSortValue(e.target.value);
+                    } else {
+                        setSortBy('default');
+                        setSortValue('');
                     }
-                }}>
-                    <option value="">Select by Battalion</option>
+                }} value={sortBy === 'battalion' ? sortValue : ''}>
+                    <option value="">Group by Battalion</option>
                     {BATTALIONS.map(b => (
                         <option key={b} value={b}>{b}</option>
                     ))}
@@ -195,11 +229,14 @@ function FleetTab() {
                 
                 <select onChange={(e) => {
                     if (e.target.value) {
-                        selectByPlanet(e.target.value);
-                        e.target.value = ''; // Reset dropdown
+                        setSortBy('planet');
+                        setSortValue(e.target.value);
+                    } else {
+                        setSortBy('default');
+                        setSortValue('');
                     }
-                }}>
-                    <option value="">Select by Planet</option>
+                }} value={sortBy === 'planet' ? sortValue : ''}>
+                    <option value="">Group by Planet</option>
                     {planets.map(p => (
                         <option key={p} value={p}>{p}</option>
                     ))}
@@ -244,9 +281,8 @@ function FleetTab() {
                     </div>
                 </div>
             )}
-
             <div className="fleet-list">
-                {Object.entries(venators).map(([id, venator]) => (
+                {getSortedVenators().map(([id, venator]) => (
                     <div 
                         key={id} 
                         className={`venator-card ${selectedVenators.includes(id) ? 'selected' : ''}`}
