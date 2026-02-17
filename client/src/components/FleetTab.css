@@ -152,6 +152,12 @@
     color: #fff;
 }
 
+.move-controls select option,
+.modal-content select option {
+    background: #1a1a2e;
+    color: #000000;
+}
+
 .modal-actions {
     display: flex;
     gap: 10px;

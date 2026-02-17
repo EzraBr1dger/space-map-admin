@@ -119,35 +119,6 @@ function FleetTab() {
                 <button onClick={deselectAll} className="btn-deselect-all">Deselect All</button>
             </div>
 
-            <div className="fleet-list">
-                {Object.entries(venators).map(([id, venator]) => (
-                    <div 
-                        key={id} 
-                        className={`venator-card ${selectedVenators.includes(id) ? 'selected' : ''}`}
-                    >
-                        <input
-                            type="checkbox"
-                            checked={selectedVenators.includes(id)}
-                            onChange={() => toggleSelect(id)}
-                        />
-                        <div className="venator-info">
-                            <h4>{venator.customName || id}</h4>
-                            <p><strong>Battalion:</strong> {venator.battalion}</p>
-                            <p><strong>Commander:</strong> {venator.commander || 'None'}</p>
-                            <p><strong>Location:</strong> {venator.currentPlanet}</p>
-                            {venator.travelingTo && (
-                                <p className="in-transit">
-                                    In Transit to {venator.travelingTo} - Arrives {new Date(venator.arrivalDate).toLocaleDateString()}
-                                </p>
-                            )}
-                        </div>
-                        <div className="venator-actions">
-                            <button onClick={() => setEditingVenator({ id, ...venator })} className="btn-edit">Edit</button>
-                        </div>
-                    </div>
-                ))}
-            </div>
-
             {selectedVenators.length > 0 && (
                 <div className="move-panel">
                     <h4>Move Fleet ({selectedVenators.length} selected)</h4>
@@ -178,6 +149,36 @@ function FleetTab() {
                     </div>
                 </div>
             )}
+
+            <div className="fleet-list">
+                {Object.entries(venators).map(([id, venator]) => (
+                    <div 
+                        key={id} 
+                        className={`venator-card ${selectedVenators.includes(id) ? 'selected' : ''}`}
+                    >
+                        <input
+                            type="checkbox"
+                            checked={selectedVenators.includes(id)}
+                            onChange={() => toggleSelect(id)}
+                        />
+                        <div className="venator-info">
+                            <h4>{venator.customName || id}</h4>
+                            <p><strong>Battalion:</strong> {venator.battalion}</p>
+                            <p><strong>Commander:</strong> {venator.commander || 'None'}</p>
+                            <p><strong>Location:</strong> {venator.currentPlanet}</p>
+                            {venator.travelingTo && (
+                                <p className="in-transit">
+                                    In Transit to {venator.travelingTo} - Arrives {new Date(venator.arrivalDate).toLocaleDateString()}
+                                </p>
+                            )}
+                        </div>
+                        <div className="venator-actions">
+                            <button onClick={() => setEditingVenator({ id, ...venator })} className="btn-edit">Edit</button>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
 
             {/* Edit Venator Modal */}
             {editingVenator && (

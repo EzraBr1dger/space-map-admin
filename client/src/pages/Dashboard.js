@@ -50,7 +50,7 @@ function Dashboard() {
 
                     <div className="header">
                         <h1>Fleet Composition Management</h1>
-                        <p>Venator Star Destroyer Command & Control</p>
+                        <p>Capital Ship Command & Control</p>
                     </div>
 
                     <FleetTab />
