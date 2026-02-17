@@ -33,37 +33,6 @@ const calculateTravelDays = (from, to) => {
     return PLANET_DISTANCES[key1] || PLANET_DISTANCES[key2] || 5; // Default 5 days
 };
 
-// Add these state variables at the top with other useState
-const [sortBy, setSortBy] = useState('default'); // 'default', 'battalion', 'planet'
-const [sortValue, setSortValue] = useState('');
-
-// Add this function to sort venators
-const getSortedVenators = () => {
-    const entries = Object.entries(venators);
-    
-    if (sortBy === 'battalion' && sortValue) {
-        return entries.sort((a, b) => {
-            const aMatch = a[1].battalion === sortValue;
-            const bMatch = b[1].battalion === sortValue;
-            if (aMatch && !bMatch) return -1;
-            if (!aMatch && bMatch) return 1;
-            return 0;
-        });
-    }
-    
-    if (sortBy === 'planet' && sortValue) {
-        return entries.sort((a, b) => {
-            const aMatch = a[1].currentPlanet === sortValue;
-            const bMatch = b[1].currentPlanet === sortValue;
-            if (aMatch && !bMatch) return -1;
-            if (!aMatch && bMatch) return 1;
-            return 0;
-        });
-    }
-    
-    return entries; // Default order
-};
-
 function FleetTab() {
     const { user } = useAuth();
     const [venators, setVenators] = useState({});
@@ -76,8 +45,8 @@ function FleetTab() {
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState({ type: '', text: '' });
     const [editingVenator, setEditingVenator] = useState(null);
-    const [sortBy, setSortBy] = useState('default'); // ADD THIS
-    const [sortValue, setSortValue] = useState(''); // ADD THIS
+    const [sortBy, setSortBy] = useState('default');
+    const [sortValue, setSortValue] = useState('');
 
     const getSortedVenators = () => {
         const entries = Object.entries(venators);
@@ -161,21 +130,6 @@ function FleetTab() {
     const selectAll = () => {
         setSelectedVenators(Object.keys(venators));
     };
-
-    const selectByBattalion = (battalion) => {
-        const venatorIds = Object.entries(venators)
-            .filter(([_, v]) => v.battalion === battalion)
-            .map(([id, _]) => id);
-        setSelectedVenators(venatorIds);
-    };
-
-    const selectByPlanet = (planet) => {
-        const venatorIds = Object.entries(venators)
-            .filter(([_, v]) => v.currentPlanet === planet)
-            .map(([id, _]) => id);
-        setSelectedVenators(venatorIds);
-    };
-
 
     const deselectAll = () => {
         setSelectedVenators([]);
@@ -309,6 +263,7 @@ function FleetTab() {
                     </div>
                 </div>
             )}
+
             <div className="fleet-list">
                 {getSortedVenators().map(([id, venator]) => (
                     <div 
@@ -337,7 +292,6 @@ function FleetTab() {
                     </div>
                 ))}
             </div>
-
 
             {/* Edit Venator Modal */}
             {editingVenator && (
