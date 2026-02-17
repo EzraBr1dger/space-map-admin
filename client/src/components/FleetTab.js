@@ -74,16 +74,49 @@ function FleetTab() {
     };
 
     const toggleSelect = (venatorId) => {
-        setSelectedVenators(prev =>
-            prev.includes(venatorId)
-                ? prev.filter(id => id !== venatorId)
-                : [...prev, venatorId]
-        );
+        setSelectedVenators(prev => {
+            // If this is the first selection, just add it
+            if (prev.length === 0) {
+                return [venatorId];
+            }
+            
+            // If already selected, deselect it
+            if (prev.includes(venatorId)) {
+                return prev.filter(id => id !== venatorId);
+            }
+            
+            // Check if new venator is at same location as already selected ones
+            const firstSelectedLocation = venators[prev[0]].currentPlanet;
+            const newVenatorLocation = venators[venatorId].currentPlanet;
+            
+            if (firstSelectedLocation !== newVenatorLocation) {
+                showMessage('error', 'Cannot select Venators from different locations');
+                return prev;
+            }
+            
+            // Add to selection
+            return [...prev, venatorId];
+        });
     };
 
     const selectAll = () => {
         setSelectedVenators(Object.keys(venators));
     };
+
+    const selectByBattalion = (battalion) => {
+        const venatorIds = Object.entries(venators)
+            .filter(([_, v]) => v.battalion === battalion)
+            .map(([id, _]) => id);
+        setSelectedVenators(venatorIds);
+    };
+
+    const selectByPlanet = (planet) => {
+        const venatorIds = Object.entries(venators)
+            .filter(([_, v]) => v.currentPlanet === planet)
+            .map(([id, _]) => id);
+        setSelectedVenators(venatorIds);
+    };
+
 
     const deselectAll = () => {
         setSelectedVenators([]);
@@ -147,6 +180,30 @@ function FleetTab() {
             <div className="fleet-controls">
                 <button onClick={selectAll} className="btn-select-all">Select All</button>
                 <button onClick={deselectAll} className="btn-deselect-all">Deselect All</button>
+                
+                <select onChange={(e) => {
+                    if (e.target.value) {
+                        selectByBattalion(e.target.value);
+                        e.target.value = ''; // Reset dropdown
+                    }
+                }}>
+                    <option value="">Select by Battalion</option>
+                    {BATTALIONS.map(b => (
+                        <option key={b} value={b}>{b}</option>
+                    ))}
+                </select>
+                
+                <select onChange={(e) => {
+                    if (e.target.value) {
+                        selectByPlanet(e.target.value);
+                        e.target.value = ''; // Reset dropdown
+                    }
+                }}>
+                    <option value="">Select by Planet</option>
+                    {planets.map(p => (
+                        <option key={p} value={p}>{p}</option>
+                    ))}
+                </select>
             </div>
 
             {selectedVenators.length > 0 && (
