@@ -4,14 +4,19 @@ const { generateToken, verifyToken, authenticateToken } = require('../middleware
 
 const router = express.Router();
 
-// Simple in-memory user store (replace with database in production)
+// Simple in-memory user store 
 const users = [
     {
         id: 1,
         username: 'LoreTeamCW:P',
-        // Default password: 'password123' - CHANGE THIS!
         password: '$2a$10$iKPIV.wytj4HfAo9vjBpdOPvYXup.pTPyRa2UDkuXUUqtigbkT3w2',
         role: 'admin'
+    },
+    {
+        id: 2,
+        username: 'Admiral',
+        password: '$2a$10$iKPIV.wytj4HfAo9vjBpdOPvYXup.pTPyRa2UDkuXUUqtigbkT3w2', // Generate with: bcrypt.hash('admiralpass', 10)
+        role: 'admiral'
     }
 ];
 

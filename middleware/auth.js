@@ -21,7 +21,6 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
-// Middleware to check if user is admin
 const requireAdmin = (req, res, next) => {
     if (!req.user || req.user.role !== 'admin') {
         return res.status(403).json({ error: 'Admin access required' });
@@ -29,7 +28,20 @@ const requireAdmin = (req, res, next) => {
     next();
 };
 
-// Generate JWT token
+const requireAdmiral = (req, res, next) => {
+    if (!req.user || req.user.role !== 'admiral') {
+        return res.status(403).json({ error: 'Admiral access required' });
+    }
+    next();
+};
+
+const requireAdmiralOrAdmin = (req, res, next) => {
+    if (!req.user || (req.user.role !== 'admiral' && req.user.role !== 'admin')) {
+        return res.status(403).json({ error: 'Admiral or Admin access required' });
+    }
+    next();
+};
+
 const generateToken = (user) => {
     return jwt.sign(
         { 
@@ -38,7 +50,7 @@ const generateToken = (user) => {
             role: user.role 
         },
         JWT_SECRET,
-        { expiresIn: '7d' } // Token expires in 7 days
+        { expiresIn: '7d' }
     );
 };
 
@@ -54,6 +66,8 @@ const verifyToken = (token) => {
 module.exports = {
     authenticateToken,
     requireAdmin,
+    requireAdmiral,
+    requireAdmiralOrAdmin,
     generateToken,
     verifyToken,
     JWT_SECRET

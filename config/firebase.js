@@ -146,6 +146,88 @@ const FirebaseHelpers = {
         }
     },
 
+
+    // Get all venators
+    async getVenators() {
+        try {
+            const snapshot = await db.ref('venators').once('value');
+            return snapshot.val() || {};
+        } catch (error) {
+            console.error('Error getting venators:', error);
+            throw error;
+        }
+    },
+
+    // Add new venator
+    async addVenator(venatorData) {
+        try {
+            const venators = await this.getVenators();
+            const nextId = Object.keys(venators).length + 1;
+            const venatorId = `venator-${nextId}`;
+            
+            await db.ref(`venators/${venatorId}`).set(venatorData);
+            console.log(`✅ Venator ${venatorId} created`);
+            return { id: venatorId, ...venatorData };
+        } catch (error) {
+            console.error('Error adding venator:', error);
+            throw error;
+        }
+    },
+
+    // Move venators
+    async moveVenators(venatorIds, destination, travelDays, instantMove = false) {
+        try {
+            const now = new Date();
+            const arrivalDate = instantMove 
+                ? now
+                : new Date(now.getTime() + travelDays * 24 * 60 * 60 * 1000);
+            
+            const updates = {};
+            for (const id of venatorIds) {
+                const venatorData = (await db.ref(`venators/${id}`).once('value')).val();
+                
+                updates[`venators/${id}`] = {
+                    ...venatorData,
+                    currentPlanet: instantMove ? destination : venatorData.currentPlanet,
+                    travelingTo: instantMove ? null : destination,
+                    departureDate: instantMove ? null : now.toISOString(),
+                    arrivalDate: instantMove ? null : arrivalDate.toISOString()
+                };
+            }
+            
+            await db.ref().update(updates);
+            console.log(`✅ Moved ${venatorIds.length} venator(s)`);
+            return true;
+        } catch (error) {
+            console.error('Error moving venators:', error);
+            throw error;
+        }
+    },
+
+    // Update venator
+    async updateVenator(venatorId, updateData) {
+        try {
+            await db.ref(`venators/${venatorId}`).update(updateData);
+            console.log(`✅ Venator ${venatorId} updated`);
+            return true;
+        } catch (error) {
+            console.error('Error updating venator:', error);
+            throw error;
+        }
+    },
+
+    // Delete venator
+    async deleteVenator(venatorId) {
+        try {
+            await db.ref(`venators/${venatorId}`).remove();
+            console.log(`✅ Venator ${venatorId} deleted`);
+            return true;
+        } catch (error) {
+            console.error('Error deleting venator:', error);
+            throw error;
+        }
+    },
+
     async getMapData() {
         try {
             const snapshot = await db.ref('mapData').once('value');
