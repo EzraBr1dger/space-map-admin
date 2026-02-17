@@ -274,7 +274,7 @@ function FleetTab() {
                         <div className="venator-info">
                             <h4>{venator.customName || id}</h4>
                             <p><strong>Battalion:</strong> {venator.battalion}</p>
-                            <p><strong>Commander:</strong> {venator.commander || 'None'}</p>
+                            <p><strong>Admiral:</strong> {venator.commander || 'None'}</p>
                             <p><strong>Location:</strong> {venator.currentPlanet}</p>
                             {venator.travelingTo && (
                                 <p className="in-transit">
@@ -308,7 +308,7 @@ function FleetTab() {
                         </select>
                         <input
                             type="text"
-                            placeholder="Commander"
+                            placeholder="Admiral"
                             value={editingVenator.commander || ''}
                             onChange={(e) => setEditingVenator({ ...editingVenator, commander: e.target.value })}
                         />
