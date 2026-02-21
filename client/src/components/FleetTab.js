@@ -371,7 +371,7 @@ function FleetTab() {
                             min="0"
                             max={venatorStats.available}
                             placeholder={`Venators (${venatorStats.available} available)`}
-                            value={newFleet.composition.venators}
+                            value={newFleet.composition.venators || ''}
                             onChange={(e) => setNewFleet({ 
                                 ...newFleet, 
                                 composition: { ...newFleet.composition, venators: parseInt(e.target.value) || 0 }
@@ -380,8 +380,8 @@ function FleetTab() {
                         <input
                             type="number"
                             min="0"
-                            placeholder="Frigates"
-                            value={newFleet.composition.frigates}
+                            placeholder="Frigates (0 = none)"
+                            value={newFleet.composition.frigates || ''}
                             onChange={(e) => setNewFleet({ 
                                 ...newFleet, 
                                 composition: { ...newFleet.composition, frigates: parseInt(e.target.value) || 0 }
@@ -422,7 +422,7 @@ function FleetTab() {
                             type="number"
                             min="0"
                             placeholder="Venators"
-                            value={editingFleet.composition?.venators || 0}
+                            value={editingFleet.composition?.venators || ''}
                             onChange={(e) => setEditingFleet({ 
                                 ...editingFleet, 
                                 composition: { ...editingFleet.composition, venators: parseInt(e.target.value) || 0 }
@@ -432,7 +432,7 @@ function FleetTab() {
                             type="number"
                             min="0"
                             placeholder="Frigates"
-                            value={editingFleet.composition?.frigates || 0}
+                            value={editingFleet.composition?.frigates || ''}
                             onChange={(e) => setEditingFleet({ 
                                 ...editingFleet, 
                                 composition: { ...editingFleet.composition, frigates: parseInt(e.target.value) || 0 }
