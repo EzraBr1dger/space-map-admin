@@ -4,52 +4,63 @@ const { FirebaseHelpers, db } = require('../config/firebase');
 
 const router = express.Router();
 
-// Get all venators (auto-generated based on Capital Ships count)
+// Get all fleets + available venator count
 router.get('/', authenticateToken, requireAdmiralOrAdmin, async (req, res) => {
     try {
-        const supplyData = await FirebaseHelpers.getSupplyData();
-        const capitalShips = Math.floor(supplyData?.items?.['Capital Ships'] || 0);
-        
-        const venators = await FirebaseHelpers.getVenators();
-        
-        // Auto-generate venators to match capital ships count
-        const generatedVenators = {};
-        for (let i = 1; i <= capitalShips; i++) {
-            const venatorId = `venator-${i}`;
-            generatedVenators[venatorId] = venators[venatorId] || {
-                customName: `Venator ${i}`,
-                battalion: 'Unassigned',
-                commander: '',
-                currentPlanet: 'Coruscant',
-                travelingTo: null,
-                departureDate: null,
-                arrivalDate: null,
-                created: new Date().toISOString()
-            };
-        }
+        const fleets = await FirebaseHelpers.getFleets();
+        const venatorStats = await FirebaseHelpers.getAvailableVenators();
         
         res.json({ 
-            venators: generatedVenators,
-            totalCapitalShips: capitalShips
+            fleets,
+            venatorStats
         });
     } catch (error) {
-        console.error('Error fetching venators:', error);
-        res.status(500).json({ error: 'Failed to fetch venators' });
+        console.error('Error fetching fleets:', error);
+        res.status(500).json({ error: 'Failed to fetch fleets' });
     }
 });
 
-// Move venators (single or multiple)
+// Add new fleet
+router.post('/', authenticateToken, requireAdmiralOrAdmin, async (req, res) => {
+    try {
+        const { fleetName, commander, battalion, startingPlanet, composition } = req.body;
+        
+        const fleet = await FirebaseHelpers.addFleet({
+            fleetName,
+            commander,
+            battalion,
+            currentPlanet: startingPlanet,
+            travelingTo: null,
+            departureDate: null,
+            arrivalDate: null,
+            composition: {
+                venators: composition.venators || 0,
+                frigates: composition.frigates || 0
+            },
+            created: new Date().toISOString()
+        });
+
+        res.json({ 
+            message: 'Fleet created successfully',
+            fleet
+        });
+    } catch (error) {
+        console.error('Error creating fleet:', error);
+        res.status(500).json({ error: error.message || 'Failed to create fleet' });
+    }
+});
+
+// Move fleets
 router.post('/move', authenticateToken, requireAdmiralOrAdmin, async (req, res) => {
     try {
-        const { venatorIds, destination, travelDays, instantMove } = req.body;
+        const { fleetIds, destination, travelDays, instantMove } = req.body;
         
-        // Only admins can instant move
         if (instantMove && req.user.role !== 'admin') {
             return res.status(403).json({ error: 'Only admins can instant move' });
         }
 
-        const result = await FirebaseHelpers.moveVenators(
-            venatorIds, 
+        const result = await FirebaseHelpers.moveFleets(
+            fleetIds, 
             destination, 
             travelDays, 
             instantMove || false
@@ -57,45 +68,59 @@ router.post('/move', authenticateToken, requireAdmiralOrAdmin, async (req, res) 
 
         res.json({ 
             message: instantMove 
-                ? `${venatorIds.length} venator(s) moved instantly to ${destination}`
-                : `${venatorIds.length} venator(s) en route to ${destination} (${travelDays} days)`,
+                ? `${fleetIds.length} fleet(s) moved instantly to ${destination}`
+                : `${fleetIds.length} fleet(s) en route to ${destination} (${travelDays} days)`,
             result
         });
     } catch (error) {
-        console.error('Error moving venators:', error);
-        res.status(500).json({ error: error.message || 'Failed to move venators' });
+        console.error('Error moving fleets:', error);
+        res.status(500).json({ error: error.message || 'Failed to move fleets' });
     }
 });
 
-// Update venator details (name, battalion, commander only)
-router.put('/:venatorId', authenticateToken, requireAdmiralOrAdmin, async (req, res) => {
+// Update fleet
+router.put('/:fleetId', authenticateToken, requireAdmiralOrAdmin, async (req, res) => {
     try {
-        const { venatorId } = req.params;
-        const { customName, battalion, commander } = req.body;
+        const { fleetId } = req.params;
+        const { fleetName, commander, battalion, composition } = req.body;
 
-        // Get existing venator data first
-        const existingVenator = (await db().ref(`venators/${venatorId}`).once('value')).val();
+        const existingFleet = (await db().ref(`fleets/${fleetId}`).once('value')).val();
         
-        if (!existingVenator) {
-            return res.status(404).json({ error: 'Venator not found' });
+        if (!existingFleet) {
+            return res.status(404).json({ error: 'Fleet not found' });
         }
 
-        // Only update specific fields, preserve everything else
         const updateData = {
-            ...existingVenator, // Keep all existing data
-            customName,
+            ...existingFleet,
+            fleetName,
+            commander,
             battalion,
-            commander
+            composition
         };
 
-        await FirebaseHelpers.updateVenator(venatorId, updateData);
+        await FirebaseHelpers.updateFleet(fleetId, updateData);
 
         res.json({ 
-            message: 'Venator updated successfully'
+            message: 'Fleet updated successfully'
         });
     } catch (error) {
-        console.error('Error updating venator:', error);
-        res.status(500).json({ error: 'Failed to update venator' });
+        console.error('Error updating fleet:', error);
+        res.status(500).json({ error: error.message || 'Failed to update fleet' });
+    }
+});
+
+// Delete fleet
+router.delete('/:fleetId', authenticateToken, requireAdmiralOrAdmin, async (req, res) => {
+    try {
+        const { fleetId } = req.params;
+        await FirebaseHelpers.deleteFleet(fleetId);
+
+        res.json({ 
+            message: 'Fleet deleted successfully'
+        });
+    } catch (error) {
+        console.error('Error deleting fleet:', error);
+        res.status(500).json({ error: 'Failed to delete fleet' });
     }
 });
 

@@ -24,6 +24,25 @@
     cursor: pointer;
 }
 
+.venator-stats {
+    background: rgba(100, 255, 218, 0.1);
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    border: 1px solid rgba(100, 255, 218, 0.3);
+}
+
+.venator-stats p {
+    margin: 0;
+    color: #64ffda;
+    font-size: 1.1rem;
+}
+
+.storage-info {
+    color: #fff;
+    opacity: 0.8;
+}
+
 .fleet-controls select option {
     background: #1a1a2e;
     color: #ffffff;

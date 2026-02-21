@@ -147,19 +147,95 @@ const FirebaseHelpers = {
     },
 
 
-    // Get all venators
-    async getVenators() {
+    // Replace getVenators with getFleets
+    async getFleets() {
         try {
-            const snapshot = await db.ref('venators').once('value');
+            const snapshot = await db.ref('fleets').once('value');
             return snapshot.val() || {};
         } catch (error) {
-            console.error('Error getting venators:', error);
+            console.error('Error getting fleets:', error);
             throw error;
         }
     },
 
-    // Move venators
-    async moveVenators(venatorIds, destination, travelDays, instantMove = false) {
+    // Calculate available venators (total - assigned)
+    async getAvailableVenators() {
+        try {
+            const supplyData = await this.getSupplyData();
+            const totalVenators = Math.floor(supplyData?.items?.['Capital Ships'] || 0);
+            
+            const fleets = await this.getFleets();
+            let assignedVenators = 0;
+            
+            for (const fleet of Object.values(fleets)) {
+                assignedVenators += fleet.composition?.venators || 0;
+            }
+            
+            return {
+                total: totalVenators,
+                assigned: assignedVenators,
+                available: totalVenators - assignedVenators
+            };
+        } catch (error) {
+            console.error('Error calculating available venators:', error);
+            throw error;
+        }
+    },
+
+    // Add new fleet
+    async addFleet(fleetData) {
+        try {
+            const fleets = await this.getFleets();
+            const nextId = Object.keys(fleets).length + 1;
+            const fleetId = `fleet-${nextId}`;
+            
+            // Validate enough venators available
+            const venatorStats = await this.getAvailableVenators();
+            if (fleetData.composition.venators > venatorStats.available) {
+                throw new Error(`Not enough Venators. Available: ${venatorStats.available}, Requested: ${fleetData.composition.venators}`);
+            }
+            
+            await db.ref(`fleets/${fleetId}`).set(fleetData);
+            console.log(`✅ Fleet ${fleetId} created`);
+            return { id: fleetId, ...fleetData };
+        } catch (error) {
+            console.error('Error adding fleet:', error);
+            throw error;
+        }
+    },
+
+    // Update fleet
+    async updateFleet(fleetId, updateData) {
+        try {
+            // Get existing fleet
+            const existingFleet = (await db.ref(`fleets/${fleetId}`).once('value')).val();
+            if (!existingFleet) {
+                throw new Error('Fleet not found');
+            }
+            
+            // If composition changed, validate venator availability
+            if (updateData.composition?.venators !== existingFleet.composition?.venators) {
+                const venatorStats = await this.getAvailableVenators();
+                const currentlyAssigned = existingFleet.composition?.venators || 0;
+                const newAssignment = updateData.composition?.venators || 0;
+                const difference = newAssignment - currentlyAssigned;
+                
+                if (difference > venatorStats.available) {
+                    throw new Error(`Not enough Venators. Available: ${venatorStats.available}, Requested: ${difference} more`);
+                }
+            }
+            
+            await db.ref(`fleets/${fleetId}`).update(updateData);
+            console.log(`✅ Fleet ${fleetId} updated`);
+            return true;
+        } catch (error) {
+            console.error('Error updating fleet:', error);
+            throw error;
+        }
+    },
+
+    // Move fleets (rename from moveVenators)
+    async moveFleets(fleetIds, destination, travelDays, instantMove = false) {
         try {
             const now = new Date();
             const arrivalDate = instantMove 
@@ -167,12 +243,12 @@ const FirebaseHelpers = {
                 : new Date(now.getTime() + travelDays * 24 * 60 * 60 * 1000);
             
             const updates = {};
-            for (const id of venatorIds) {
-                const venatorData = (await db.ref(`venators/${id}`).once('value')).val();
+            for (const id of fleetIds) {
+                const fleetData = (await db.ref(`fleets/${id}`).once('value')).val();
                 
-                updates[`venators/${id}`] = {
-                    ...venatorData,
-                    currentPlanet: instantMove ? destination : venatorData.currentPlanet,
+                updates[`fleets/${id}`] = {
+                    ...fleetData,
+                    currentPlanet: instantMove ? destination : fleetData.currentPlanet,
                     travelingTo: instantMove ? null : destination,
                     departureDate: instantMove ? null : now.toISOString(),
                     arrivalDate: instantMove ? null : arrivalDate.toISOString()
@@ -180,50 +256,22 @@ const FirebaseHelpers = {
             }
             
             await db.ref().update(updates);
-            console.log(`✅ Moved ${venatorIds.length} venator(s)`);
+            console.log(`✅ Moved ${fleetIds.length} fleet(s)`);
             return true;
         } catch (error) {
-            console.error('Error moving venators:', error);
+            console.error('Error moving fleets:', error);
             throw error;
         }
     },
 
-    // Update venator
-    async updateVenator(venatorId, updateData) {
+    // Delete fleet
+    async deleteFleet(fleetId) {
         try {
-            await db.ref(`venators/${venatorId}`).update(updateData);
-            console.log(`✅ Venator ${venatorId} updated`);
+            await db.ref(`fleets/${fleetId}`).remove();
+            console.log(`✅ Fleet ${fleetId} deleted`);
             return true;
         } catch (error) {
-            console.error('Error updating venator:', error);
-            throw error;
-        }
-    },
-
-    // Delete venator (also reduces Capital Ships count)
-    async deleteVenator(venatorId) {
-        try {
-            // Remove venator from database
-            await db.ref(`venators/${venatorId}`).remove();
-            
-            // Reduce Capital Ships count by 1
-            const supplyData = await this.getSupplyData();
-            if (supplyData && supplyData.items && supplyData.items['Capital Ships']) {
-                supplyData.items['Capital Ships'] = Math.max(0, supplyData.items['Capital Ships'] - 1);
-                
-                // Recalculate total
-                supplyData.totalSupply = 0;
-                for (const resource in supplyData.items) {
-                    supplyData.totalSupply += supplyData.items[resource];
-                }
-                
-                await this.updateSupplyData(supplyData);
-            }
-            
-            console.log(`✅ Venator ${venatorId} deleted and Capital Ships reduced by 1`);
-            return true;
-        } catch (error) {
-            console.error('Error deleting venator:', error);
+            console.error('Error deleting fleet:', error);
             throw error;
         }
     },
