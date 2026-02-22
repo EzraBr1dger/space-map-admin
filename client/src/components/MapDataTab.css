@@ -161,6 +161,11 @@
     background: #d32f2f;
 }
 
+.form-group select {
+    color: #000;
+    background-color: #fff;
+}
+
 .current-building,
 .current-building-edit {
     padding: 10px;
