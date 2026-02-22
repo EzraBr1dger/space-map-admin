@@ -405,7 +405,6 @@ function SectorCard({ name, sector, editMode, isChanged, onUpdate }) {
                         <option value="Republic">Republic</option>
                         <option value="Separatists">Separatists</option>
                         <option value="Neutral">Neutral</option>
-                        <option value="Contested">Contested</option>
                         <option value="Independent">Independent</option>
                     </select>
                 </div>
@@ -415,6 +414,7 @@ function SectorCard({ name, sector, editMode, isChanged, onUpdate }) {
                         <option value="Peaceful">Peaceful</option>
                         <option value="Frontline">Frontline</option>
                         <option value="War">War</option>
+                        <option value="Contested">Contested</option>
                     </select>
                 </div>
                 <div className="form-group">
