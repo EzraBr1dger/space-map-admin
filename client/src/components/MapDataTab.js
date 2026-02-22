@@ -199,7 +199,7 @@ function MapDataTab() {
                         <select value={planet.faction} onChange={(e) => onUpdate(name, 'faction', e.target.value)}>
                             <option value="Republic">Republic</option>
                             <option value="Separatists">Separatists</option>
-                            <option value="Neutral">Neutral</option>
+                            <option value="Independent">Independent</option>
                             <option value="Mandalore">Mandalore</option>
                         </select>
                     </div>
@@ -404,7 +404,6 @@ function SectorCard({ name, sector, editMode, isChanged, onUpdate }) {
                     <select value={sector.controlledBy} onChange={(e) => onUpdate(name, 'controlledBy', e.target.value)}>
                         <option value="Republic">Republic</option>
                         <option value="Separatists">Separatists</option>
-                        <option value="Neutral">Neutral</option>
                         <option value="Independent">Independent</option>
                     </select>
                 </div>
@@ -469,7 +468,6 @@ function getFactionColor(faction) {
         'Republic': '#4fc3f7',
         'Separatists': '#f44336',
         'Mandalore': '#ff9800',
-        'Neutral': '#888',
         'Independent': '#888',
         'Contested': '#ff9800'
     };
