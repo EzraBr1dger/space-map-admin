@@ -191,11 +191,11 @@ router.put('/sector/:sectorName', authenticateToken, requireAdmin, async (req, r
         
         currentMapData.lastUpdate = new Date().toISOString();
 
-        await FirebaseHelpers.updateMapData(currentMapData);
+        await FirebaseHelpers.updateSector(sectorName, sectorData);
 
         res.json({ 
             message: `Sector ${sectorName} updated successfully`,
-            sector: currentMapData.sectors[sectorName]
+            sector: sectorData
         });
 
         console.log(`✅ Sector ${sectorName} updated by ${req.user.username}`);

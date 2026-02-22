@@ -48,6 +48,20 @@ const FirebaseHelpers = {
         }
     },
 
+    async updateSector(sectorName, sectorData) {
+        try {
+            await db.ref(`mapData/sectors/${sectorName}`).update({
+                ...sectorData,
+                lastModified: new Date().toISOString()
+            });
+            console.log(`✅ Sector ${sectorName} updated`);
+            return true;
+        } catch (error) {
+            console.error(`Error updating sector ${sectorName}:`, error);
+            throw error;
+        }
+    },
+
     // Update supply data
     async updateSupplyData(supplyData) {
         try {
