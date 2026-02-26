@@ -265,7 +265,7 @@ const FirebaseHelpers = {
                     currentPlanet: instantMove ? destination : fleetData.currentPlanet,
                     travelingTo: instantMove ? null : destination,
                     departureDate: instantMove ? null : now.toISOString(),
-                    arrivalDate: instantMove ? null : arrivalDate.toISOString()
+                    arrivalDate: instantMove ? fleetData.arrivalDate || null : arrivalDate.toISOString()
                 };
             }
             
