@@ -388,9 +388,14 @@ function MapDataTab() {
                                 <p className="senate-desc">{info.description}</p>
                                 {active ? (
                                     <div className="senate-active">
-                                        <span className="senate-status">✅ Active since {new Date(active.startDate).toLocaleDateString()}</span>
-                                        <span className="senate-completion">Completes: {new Date(active.completionDate).toLocaleDateString()}</span>
-                                        <button onClick={() => cancelSenateProject(name)} className="btn-cancel-building">Cancel Project</button>
+                                        <span className="senate-status">✅ Funded</span>
+                                        <div className="building-details">
+                                            Started: {new Date(active.startDate).toLocaleDateString()}
+                                            <br />
+                                            Completes: {new Date(active.completionDate).toLocaleDateString()}
+                                            <br />
+                                            Cost: {active.cost.toLocaleString()} credits
+                                        </div>
                                     </div>
                                 ) : (
                                     <button onClick={() => startSenateProject(name)} className="btn-start-building">Fund Project</button>
