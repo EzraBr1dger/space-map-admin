@@ -1,7 +1,7 @@
 // routes/mapData.js
 const express = require('express');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
-const { FirebaseHelpers } = require('../config/firebase');
+const { FirebaseHelpers, db } = require('../config/firebase');
 
 const router = express.Router();
 
@@ -267,6 +267,21 @@ router.delete('/senate-project/:projectName', authenticateToken, requireAdmin, a
         res.json({ message: `${projectName} cancelled` });
     } catch (error) {
         res.status(500).json({ error: error.message || 'Failed to cancel senate project' });
+    }
+});
+
+router.patch('/planet-access', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const { planetName, cisAccessible } = req.body;
+        const mapData = await FirebaseHelpers.getMapData();
+        if (!mapData?.planets?.[planetName]) {
+            return res.status(404).json({ error: 'Planet not found' });
+        }
+        await db().ref(`mapData/planets/${planetName}`).update({ cisAccessible });
+        res.json({ message: 'Planet access updated' });
+    } catch (error) {
+        console.error('Error updating planet access:', error);
+        res.status(500).json({ error: 'Failed to update planet access' });
     }
 });
 
