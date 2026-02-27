@@ -38,7 +38,6 @@ function PlanetCard({ name, planet, editMode, isChanged, onUpdate, addBuilding, 
         }
     };
 
-
     if (!editMode) {
         return (
             <div className={`planet-card faction-${planet.faction?.toLowerCase()}`}>
@@ -57,13 +56,13 @@ function PlanetCard({ name, planet, editMode, isChanged, onUpdate, addBuilding, 
                             </div>
                         </div>
                     )}
-                    {locationEntries.length > 0 && (
+                    {Object.entries(localLocations).length > 0 && (
                         <div className="locations-section">
-                            <strong>Locations ({locationEntries.length}):</strong>
+                            <strong>Locations ({Object.entries(localLocations).length}):</strong>
                             <div className="location-list-view">
-                                {locationEntries.map(([locName, faction]) => (
-                                    <span key={locName} className="location-badge" style={{ borderColor: factionColor[faction] }}>
-                                        <span style={{ color: factionColor[faction] }}>●</span> {locName}
+                                {Object.entries(localLocations).map(([locName, locFaction]) => (
+                                    <span key={locName} className="location-badge" style={{ borderColor: factionColor[locFaction] }}>
+                                        <span style={{ color: factionColor[locFaction] }}>●</span> {locName}
                                     </span>
                                 ))}
                             </div>
@@ -101,19 +100,18 @@ function PlanetCard({ name, planet, editMode, isChanged, onUpdate, addBuilding, 
                     <input type="text" value={planet.customFactionImage || ''} onChange={(e) => onUpdate(name, 'customFactionImage', e.target.value)} placeholder="rbxassetid://123456789" />
                 </div>
 
-                {/* Locations Section */}
-                {locationEntries.length > 0 && (
+                {Object.entries(localLocations).length > 0 && (
                     <div className="form-group locations-edit-section">
                         <label>Location Control:</label>
                         {locationMessage && <div className="location-message">{locationMessage}</div>}
                         <div className="location-edit-list">
-                            {locationEntries.map(([locName, faction]) => (
+                            {Object.entries(localLocations).map(([locName, locFaction]) => (
                                 <div key={locName} className="location-edit-row">
                                     <span className="location-edit-name">{locName}</span>
                                     <select
-                                        value={localLocations[locName]}
+                                        value={locFaction}
                                         onChange={(e) => updateLocation(locName, e.target.value)}
-                                        style={{ borderColor: factionColor[faction] }}
+                                        style={{ borderColor: factionColor[locFaction] }}
                                     >
                                         <option value="Republic">Republic</option>
                                         <option value="Separatists">Separatists</option>
@@ -126,7 +124,6 @@ function PlanetCard({ name, planet, editMode, isChanged, onUpdate, addBuilding, 
                     </div>
                 )}
 
-                {/* Building Section */}
                 <div className="form-group building-section">
                     <label>Building Projects:</label>
                     {planet.currentBuilding ? (
