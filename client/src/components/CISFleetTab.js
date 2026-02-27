@@ -103,7 +103,8 @@ function CISFleetTab() {
             const response = await api.post('/cisfleet/move', {
                 fleetIds: selectedFleets,
                 destination,
-                travelDays
+                travelDays,
+                instantMove
             });
             showMessage('success', response.data.message);
             setSelectedFleets([]);
@@ -193,6 +194,14 @@ function CISFleetTab() {
                             {planets.map(p => <option key={p} value={p}>{p}</option>)}
                         </select>
                         <span className="travel-time">Travel Time: {travelDays} day{travelDays !== 1 ? 's' : ''}</span>
+                        <label>
+                            <input
+                                type="checkbox"
+                                checked={instantMove}
+                                onChange={(e) => setInstantMove(e.target.checked)}
+                            />
+                            Instant Move
+                        </label>
                         <button onClick={moveFleet} className="btn-move">Move Fleet</button>
                     </div>
                 </div>
