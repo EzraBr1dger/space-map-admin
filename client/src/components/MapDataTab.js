@@ -22,21 +22,15 @@ function PlanetCard({ name, planet, editMode, isChanged, onUpdate, addBuilding, 
     const [locationMessage, setLocationMessage] = useState('');
     const [localLocations, setLocalLocations] = useState(() => ({ ...planet.locations }));
 
-    useEffect(() => {
-        setLocalLocations({ ...planet.locations });
-    }, [planet.locations]);
-
     const updateLocation = async (locationName, faction) => {
+        setLocalLocations(prev => ({ ...prev, [locationName]: faction })); // optimistic, instant
         setLocationMessage(`⏳ Updating ${locationName}...`);
         try {
-            await api.patch(`/mapdata/planet/${encodeURIComponent(name)}/location`, {
-                locationName,
-                faction
-            });
-            setLocalLocations(prev => ({ ...prev, [locationName]: faction }));
+            await api.patch(`/mapdata/planet/${encodeURIComponent(name)}/location`, { locationName, faction });
             setLocationMessage(`✅ ${locationName} → ${faction}`);
             setTimeout(() => setLocationMessage(''), 3000);
         } catch (error) {
+            setLocalLocations(prev => ({ ...prev, [locationName]: planet.locations[locationName] })); // revert
             setLocationMessage(`❌ Failed to update ${locationName}`);
             setTimeout(() => setLocationMessage(''), 3000);
         }
@@ -296,8 +290,24 @@ function MapDataTab() {
                 days: building.days
             });
             
-            // Comment out or remove the local state update
-            await loadMapData(); // Reload from server instead
+            const completionDate = new Date();
+            completionDate.setDate(completionDate.getDate() + building.days);
+            
+            setMapData(prev => ({
+                ...prev,
+                planets: {
+                    ...prev.planets,
+                    [planetName]: {
+                        ...prev.planets[planetName],
+                        currentBuilding: {
+                            type: buildingType,
+                            startDate: new Date().toISOString(),
+                            completionDate: completionDate.toISOString(),
+                            cost: building.cost
+                        }
+                    }
+                }
+            }));
             
             showMessage('success', response.data.message);
         } catch (error) {
@@ -309,10 +319,18 @@ function MapDataTab() {
         try {
             showMessage('success', 'Cancelling building construction...');
             
-            // UNCOMMENT THIS:
             await api.delete(`/mapdata/planet/${encodeURIComponent(planetName)}/building`);
             
-            await loadMapData(); // Reload from server
+            setMapData(prev => ({
+                ...prev,
+                planets: {
+                    ...prev.planets,
+                    [planetName]: {
+                        ...prev.planets[planetName],
+                        currentBuilding: null
+                    }
+                }
+            }));
             
             showMessage('success', 'Building construction cancelled');
         } catch (error) {
