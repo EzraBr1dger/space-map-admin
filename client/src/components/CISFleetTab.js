@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import './FleetTab.css';
-const [instantMove, setInstantMove] = useState(false);
 
 const CIS_GROUPS = ['Grievous Fleet', 'Dooku Command', 'Muun Banking Clan', 'Trade Federation', 'Techno Union', 'Unassigned'];
 
@@ -36,6 +35,7 @@ function CISFleetTab() {
     const [showAddModal, setShowAddModal] = useState(false);
     const [sortBy, setSortBy] = useState('default');
     const [sortValue, setSortValue] = useState('');
+    const [instantMove, setInstantMove] = useState(false);
 
     const [newFleet, setNewFleet] = useState({
         fleetName: '',
