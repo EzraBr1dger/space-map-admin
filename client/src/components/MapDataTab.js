@@ -16,6 +16,154 @@ const BUILDING_TYPES = {
     'Civil Infrastructure': { cost: 250000, days: 1, description: 'Reduces planetary unrest (affects lore events)' }
 };
 
+function PlanetCard({ name, planet, editMode, isChanged, onUpdate, addBuilding, cancelBuilding }) {
+    const reputation = (planet.reputation || planet.efficiency || 1.0) * 100;
+    const [selectedBuilding, setSelectedBuilding] = useState('');
+    const [locationMessage, setLocationMessage] = useState('');
+    const [localLocations, setLocalLocations] = useState(() => ({ ...planet.locations }));
+
+    const updateLocation = async (locationName, faction) => {
+        setLocalLocations(prev => ({ ...prev, [locationName]: faction }));
+        try {
+            await api.patch(`/mapdata/planet/${encodeURIComponent(name)}/location`, {
+                locationName,
+                faction
+            });
+            setLocationMessage(`✅ ${locationName} → ${faction}`);
+            setTimeout(() => setLocationMessage(''), 3000);
+        } catch (error) {
+            setLocalLocations(prev => ({ ...prev, [locationName]: planet.locations[locationName] }));
+            setLocationMessage(`❌ Failed to update ${locationName}`);
+            setTimeout(() => setLocationMessage(''), 3000);
+        }
+    };
+
+    const factionColor = { Republic: '#4fc3f7', Separatists: '#f44336', Mandalore: '#ff9800', Independent: '#888' };
+
+    const locations = planet.locations || {};
+    const locationEntries = Object.entries(localLocations);
+
+    if (!editMode) {
+        return (
+            <div className={`planet-card faction-${planet.faction?.toLowerCase()}`}>
+                <div className="planet-name">{name}</div>
+                <div className="planet-info">
+                    <div><strong>Faction:</strong> <span style={{ color: getFactionColor(planet.faction) }}>{planet.faction}</span></div>
+                    <div><strong>Reputation:</strong> <span style={{ color: getReputationColor(reputation) }}>{Math.round(reputation)}%</span></div>
+                    {planet.description && <div><strong>Description:</strong> {planet.description}</div>}
+                    {planet.currentBuilding && (
+                        <div className="current-building">
+                            <strong>Building:</strong> {planet.currentBuilding.type}
+                            <div className="building-details">
+                                Started: {new Date(planet.currentBuilding.startDate).toLocaleDateString()}
+                                <br />Completes: {new Date(planet.currentBuilding.completionDate).toLocaleDateString()}
+                                <br />Cost: {planet.currentBuilding.cost.toLocaleString()} credits
+                            </div>
+                        </div>
+                    )}
+                    {locationEntries.length > 0 && (
+                        <div className="locations-section">
+                            <strong>Locations ({locationEntries.length}):</strong>
+                            <div className="location-list-view">
+                                {locationEntries.map(([locName, faction]) => (
+                                    <span key={locName} className="location-badge" style={{ borderColor: factionColor[faction] }}>
+                                        <span style={{ color: factionColor[faction] }}>●</span> {locName}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className={`planet-card faction-${planet.faction?.toLowerCase()} ${isChanged ? 'changed' : ''}`}>
+            <div className="planet-name">{name}</div>
+            <div className="planet-edit">
+                <div className="form-group">
+                    <label>Faction:</label>
+                    <select value={planet.faction} onChange={(e) => onUpdate(name, 'faction', e.target.value)}>
+                        <option value="Republic">Republic</option>
+                        <option value="Separatists">Separatists</option>
+                        <option value="Independent">Independent</option>
+                        <option value="Mandalore">Mandalore</option>
+                    </select>
+                </div>
+                <div className="form-group">
+                    <label>Reputation (%):</label>
+                    <input type="number" value={Math.round(reputation)} onChange={(e) => onUpdate(name, 'reputation', e.target.value)} min="0" max="200" />
+                    <small>100% = normal, 80% = reduced, 120% = bonus</small>
+                </div>
+                <div className="form-group">
+                    <label>Description:</label>
+                    <textarea value={planet.description || ''} onChange={(e) => onUpdate(name, 'description', e.target.value)} rows="3" />
+                </div>
+                <div className="form-group">
+                    <label>Custom Faction Image ID:</label>
+                    <input type="text" value={planet.customFactionImage || ''} onChange={(e) => onUpdate(name, 'customFactionImage', e.target.value)} placeholder="rbxassetid://123456789" />
+                </div>
+
+                {/* Locations Section */}
+                {locationEntries.length > 0 && (
+                    <div className="form-group locations-edit-section">
+                        <label>Location Control:</label>
+                        {locationMessage && <div className="location-message">{locationMessage}</div>}
+                        <div className="location-edit-list">
+                            {locationEntries.map(([locName, faction]) => (
+                                <div key={locName} className="location-edit-row">
+                                    <span className="location-edit-name">{locName}</span>
+                                    <select
+                                        value={localLocations[locName]}
+                                        onChange={(e) => updateLocation(locName, e.target.value)}
+                                        style={{ borderColor: factionColor[faction] }}
+                                    >
+                                        <option value="Republic">Republic</option>
+                                        <option value="Separatists">Separatists</option>
+                                        <option value="Mandalore">Mandalore</option>
+                                        <option value="Independent">Independent</option>
+                                    </select>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Building Section */}
+                <div className="form-group building-section">
+                    <label>Building Projects:</label>
+                    {planet.currentBuilding ? (
+                        <div className="current-building-edit">
+                            <div><strong>Current:</strong> {planet.currentBuilding.type}</div>
+                            <div>Completes: {new Date(planet.currentBuilding.completionDate).toLocaleDateString()}</div>
+                            <div>Cost: {planet.currentBuilding.cost.toLocaleString()} credits</div>
+                            <button onClick={() => cancelBuilding(name)} className="btn-cancel-building" type="button">Cancel Building</button>
+                        </div>
+                    ) : (
+                        <div className="building-selector">
+                            <select value={selectedBuilding} onChange={(e) => setSelectedBuilding(e.target.value)}>
+                                <option value="">-- Select Building --</option>
+                                {Object.entries(BUILDING_TYPES).map(([type, info]) => (
+                                    <option key={type} value={type}>{type} - {info.cost.toLocaleString()} credits - {info.days} days</option>
+                                ))}
+                            </select>
+                            {selectedBuilding && (
+                                <div className="building-info">
+                                    <small>{BUILDING_TYPES[selectedBuilding].description}</small>
+                                    <button onClick={() => { addBuilding(name, selectedBuilding); setSelectedBuilding(''); }} className="btn-start-building" type="button">Start Construction</button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                {isChanged && <div className="change-indicator">📝 Changes pending...</div>}
+            </div>
+        </div>
+    );
+}
+
 function MapDataTab() {
     const [mapData, setMapData] = useState({ planets: {}, sectors: {} });
     const [loading, setLoading] = useState(true);
@@ -197,154 +345,6 @@ function MapDataTab() {
         setTimeout(() => setSenateMessage({ type: '', text: '' }), 5000);
     };
 
-    function PlanetCard({ name, planet, editMode, isChanged, onUpdate }) {
-        const reputation = (planet.reputation || planet.efficiency || 1.0) * 100;
-        const [selectedBuilding, setSelectedBuilding] = useState('');
-        const [locationMessage, setLocationMessage] = useState('');
-        const [localLocations, setLocalLocations] = useState(planet.locations || {});
-
-        const updateLocation = async (locationName, faction) => {
-            setLocalLocations(prev => ({ ...prev, [locationName]: faction }));
-            try {
-                await api.patch(`/mapdata/planet/${encodeURIComponent(name)}/location`, {
-                    locationName,
-                    faction
-                });
-                setLocationMessage(`✅ ${locationName} → ${faction}`);
-                setTimeout(() => setLocationMessage(''), 3000);
-            } catch (error) {
-                setLocalLocations(prev => ({ ...prev, [locationName]: planet.locations[locationName] }));
-                setLocationMessage(`❌ Failed to update ${locationName}`);
-                setTimeout(() => setLocationMessage(''), 3000);
-            }
-        };
-
-        const factionColor = { Republic: '#4fc3f7', Separatists: '#f44336', Mandalore: '#ff9800', Independent: '#888' };
-
-        const locations = planet.locations || {};
-        const locationEntries = Object.entries(localLocations);
-
-        if (!editMode) {
-            return (
-                <div className={`planet-card faction-${planet.faction?.toLowerCase()}`}>
-                    <div className="planet-name">{name}</div>
-                    <div className="planet-info">
-                        <div><strong>Faction:</strong> <span style={{ color: getFactionColor(planet.faction) }}>{planet.faction}</span></div>
-                        <div><strong>Reputation:</strong> <span style={{ color: getReputationColor(reputation) }}>{Math.round(reputation)}%</span></div>
-                        {planet.description && <div><strong>Description:</strong> {planet.description}</div>}
-                        {planet.currentBuilding && (
-                            <div className="current-building">
-                                <strong>Building:</strong> {planet.currentBuilding.type}
-                                <div className="building-details">
-                                    Started: {new Date(planet.currentBuilding.startDate).toLocaleDateString()}
-                                    <br />Completes: {new Date(planet.currentBuilding.completionDate).toLocaleDateString()}
-                                    <br />Cost: {planet.currentBuilding.cost.toLocaleString()} credits
-                                </div>
-                            </div>
-                        )}
-                        {locationEntries.length > 0 && (
-                            <div className="locations-section">
-                                <strong>Locations ({locationEntries.length}):</strong>
-                                <div className="location-list-view">
-                                    {locationEntries.map(([locName, faction]) => (
-                                        <span key={locName} className="location-badge" style={{ borderColor: factionColor[faction] }}>
-                                            <span style={{ color: factionColor[faction] }}>●</span> {locName}
-                                        </span>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            );
-        }
-
-        return (
-            <div className={`planet-card faction-${planet.faction?.toLowerCase()} ${isChanged ? 'changed' : ''}`}>
-                <div className="planet-name">{name}</div>
-                <div className="planet-edit">
-                    <div className="form-group">
-                        <label>Faction:</label>
-                        <select value={planet.faction} onChange={(e) => onUpdate(name, 'faction', e.target.value)}>
-                            <option value="Republic">Republic</option>
-                            <option value="Separatists">Separatists</option>
-                            <option value="Independent">Independent</option>
-                            <option value="Mandalore">Mandalore</option>
-                        </select>
-                    </div>
-                    <div className="form-group">
-                        <label>Reputation (%):</label>
-                        <input type="number" value={Math.round(reputation)} onChange={(e) => onUpdate(name, 'reputation', e.target.value)} min="0" max="200" />
-                        <small>100% = normal, 80% = reduced, 120% = bonus</small>
-                    </div>
-                    <div className="form-group">
-                        <label>Description:</label>
-                        <textarea value={planet.description || ''} onChange={(e) => onUpdate(name, 'description', e.target.value)} rows="3" />
-                    </div>
-                    <div className="form-group">
-                        <label>Custom Faction Image ID:</label>
-                        <input type="text" value={planet.customFactionImage || ''} onChange={(e) => onUpdate(name, 'customFactionImage', e.target.value)} placeholder="rbxassetid://123456789" />
-                    </div>
-
-                    {/* Locations Section */}
-                    {locationEntries.length > 0 && (
-                        <div className="form-group locations-edit-section">
-                            <label>Location Control:</label>
-                            {locationMessage && <div className="location-message">{locationMessage}</div>}
-                            <div className="location-edit-list">
-                                {locationEntries.map(([locName, faction]) => (
-                                    <div key={locName} className="location-edit-row">
-                                        <span className="location-edit-name">{locName}</span>
-                                        <select
-                                            value={localLocations[locName]}
-                                            onChange={(e) => updateLocation(locName, e.target.value)}
-                                            style={{ borderColor: factionColor[faction] }}
-                                        >
-                                            <option value="Republic">Republic</option>
-                                            <option value="Separatists">Separatists</option>
-                                            <option value="Mandalore">Mandalore</option>
-                                            <option value="Independent">Independent</option>
-                                        </select>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Building Section */}
-                    <div className="form-group building-section">
-                        <label>Building Projects:</label>
-                        {planet.currentBuilding ? (
-                            <div className="current-building-edit">
-                                <div><strong>Current:</strong> {planet.currentBuilding.type}</div>
-                                <div>Completes: {new Date(planet.currentBuilding.completionDate).toLocaleDateString()}</div>
-                                <div>Cost: {planet.currentBuilding.cost.toLocaleString()} credits</div>
-                                <button onClick={() => cancelBuilding(name)} className="btn-cancel-building" type="button">Cancel Building</button>
-                            </div>
-                        ) : (
-                            <div className="building-selector">
-                                <select value={selectedBuilding} onChange={(e) => setSelectedBuilding(e.target.value)}>
-                                    <option value="">-- Select Building --</option>
-                                    {Object.entries(BUILDING_TYPES).map(([type, info]) => (
-                                        <option key={type} value={type}>{type} - {info.cost.toLocaleString()} credits - {info.days} days</option>
-                                    ))}
-                                </select>
-                                {selectedBuilding && (
-                                    <div className="building-info">
-                                        <small>{BUILDING_TYPES[selectedBuilding].description}</small>
-                                        <button onClick={() => { addBuilding(name, selectedBuilding); setSelectedBuilding(''); }} className="btn-start-building" type="button">Start Construction</button>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-
-                    {isChanged && <div className="change-indicator">📝 Changes pending...</div>}
-                </div>
-            </div>
-        );
-    }
-
     const recalculateSectors = async () => {
         try {
             showMessage('success', 'Recalculating sector control...');
@@ -441,6 +441,8 @@ function MapDataTab() {
                                 editMode={editMode}
                                 isChanged={changedItems.has(`planet-${name}`)}
                                 onUpdate={updatePlanet}
+                                addBuilding={addBuilding}
+                                cancelBuilding={cancelBuilding}
                             />
                         ))}
                     </div>
