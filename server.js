@@ -12,6 +12,7 @@ const statsRoutes = require('./routes/stats');
 const announcementRoutes = require('./routes/announcements');
 const mapDataRoutes = require('./routes/mapData');
 const fleetRoutes = require('./routes/fleet');
+const cisFleetRoutes = require('./routes/cisfleet');
 
 // Import Firebase config
 const { initializeFirebase } = require('./config/firebase');
@@ -59,6 +60,7 @@ app.use('/api/stats', statsRoutes);
 app.use('/api/announcements', announcementRoutes);
 app.use('/api/mapdata', mapDataRoutes);
 app.use('/api/fleet', fleetRoutes);
+app.use('/api/cisfleet', cisFleetRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
