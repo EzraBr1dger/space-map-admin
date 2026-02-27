@@ -49,7 +49,7 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
 
 router.post('/move', authenticateToken, requireAdmin, async (req, res) => {
     try {
-        const { fleetIds, destination, travelDays } = req.body;
+        const { fleetIds, destination, travelDays, instantMove } = req.body;
         const now = new Date();
         const arrivalDate = new Date(now.getTime() + travelDays * 24 * 60 * 60 * 1000);
 
@@ -59,14 +59,18 @@ router.post('/move', authenticateToken, requireAdmin, async (req, res) => {
             const fleetData = snapshot.val();
             updates[`cisFleets/${id}`] = {
                 ...fleetData,
-                travelingTo: destination,
-                departureDate: now.toISOString(),
-                arrivalDate: arrivalDate.toISOString()
+                currentPlanet: instantMove ? destination : fleetData.currentPlanet,
+                travelingTo: instantMove ? null : destination,
+                departureDate: instantMove ? null : now.toISOString(),
+                arrivalDate: instantMove ? now.toISOString() : arrivalDate.toISOString()
             };
         }
 
         await db().ref().update(updates);
-        res.json({ message: `${fleetIds.length} fleet(s) en route to ${destination} (${travelDays} days)` });
+        res.json({ message: instantMove
+            ? `${fleetIds.length} fleet(s) moved instantly to ${destination}`
+            : `${fleetIds.length} fleet(s) en route to ${destination} (${travelDays} days)`
+        });
     } catch (error) {
         res.status(500).json({ error: error.message || 'Failed to move CIS fleets' });
     }
