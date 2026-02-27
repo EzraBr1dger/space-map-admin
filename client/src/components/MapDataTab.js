@@ -22,17 +22,21 @@ function PlanetCard({ name, planet, editMode, isChanged, onUpdate, addBuilding, 
     const [locationMessage, setLocationMessage] = useState('');
     const [localLocations, setLocalLocations] = useState(() => ({ ...planet.locations }));
 
+    useEffect(() => {
+        setLocalLocations({ ...planet.locations });
+    }, [planet.locations]);
+
     const updateLocation = async (locationName, faction) => {
-        setLocalLocations(prev => ({ ...prev, [locationName]: faction }));
+        setLocationMessage(`⏳ Updating ${locationName}...`);
         try {
             await api.patch(`/mapdata/planet/${encodeURIComponent(name)}/location`, {
                 locationName,
                 faction
             });
+            setLocalLocations(prev => ({ ...prev, [locationName]: faction }));
             setLocationMessage(`✅ ${locationName} → ${faction}`);
             setTimeout(() => setLocationMessage(''), 3000);
         } catch (error) {
-            setLocalLocations(prev => ({ ...prev, [locationName]: planet.locations[locationName] }));
             setLocationMessage(`❌ Failed to update ${locationName}`);
             setTimeout(() => setLocationMessage(''), 3000);
         }
@@ -286,7 +290,6 @@ function MapDataTab() {
         try {
             showMessage('success', `Starting construction of ${buildingType}...`);
             
-            // UNCOMMENT THIS:
             const response = await api.post(`/mapdata/planet/${encodeURIComponent(planetName)}/building`, {
                 buildingType,
                 cost: building.cost,
