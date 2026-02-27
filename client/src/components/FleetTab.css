@@ -43,6 +43,19 @@
     opacity: 0.8;
 }
 
+.modal-content textarea {
+    width: 100%;
+    margin-bottom: 15px;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+    resize: vertical;
+    font-family: inherit;
+    box-sizing: border-box;
+}
+
 .fleet-controls select option {
     background: #1a1a2e;
     color: #ffffff;

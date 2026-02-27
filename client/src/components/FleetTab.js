@@ -45,6 +45,7 @@ function FleetTab() {
         commander: '',
         battalion: 'Unassigned',
         startingPlanet: 'Coruscant',
+        description: '',
         composition: {
             venators: 0,
             frigates: 0
@@ -323,6 +324,9 @@ function FleetTab() {
                             <p><strong>Battalion:</strong> {fleet.battalion}</p>
                             <p><strong>Composition:</strong> {fleet.composition?.venators || 0} Venators, {fleet.composition?.frigates || 0} Frigates</p>
                             <p><strong>Location:</strong> {fleet.currentPlanet}</p>
+                            {fleet.description && (
+                                <p><strong>Description:</strong> {fleet.description}</p>
+                            )}
                             {fleet.travelingTo && (
                                 <p className="in-transit">
                                     In Transit to {fleet.travelingTo} - Arrives {new Date(fleet.arrivalDate).toLocaleDateString()}
@@ -387,6 +391,12 @@ function FleetTab() {
                                 composition: { ...newFleet.composition, frigates: parseInt(e.target.value) || 0 }
                             })}
                         />
+                        <textarea
+                            placeholder="Fleet description (optional)"
+                            value={newFleet.description || ''}
+                            onChange={(e) => setNewFleet({ ...newFleet, description: e.target.value })}
+                            rows={3}
+                        />
                         <div className="modal-actions">
                             <button onClick={addFleet} className="btn-save">Create Fleet</button>
                             <button onClick={() => setShowAddModal(false)} className="btn-cancel">Cancel</button>
@@ -437,6 +447,12 @@ function FleetTab() {
                                 ...editingFleet, 
                                 composition: { ...editingFleet.composition, frigates: parseInt(e.target.value) || 0 }
                             })}
+                        />
+                        <textarea
+                            placeholder="Fleet description (optional)"
+                            value={editingFleet.description || ''}
+                            onChange={(e) => setEditingFleet({ ...editingFleet, description: e.target.value })}
+                            rows={3}
                         />
                         <div className="modal-actions">
                             <button onClick={updateFleet} className="btn-save">Save Changes</button>
