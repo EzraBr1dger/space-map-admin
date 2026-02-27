@@ -285,4 +285,27 @@ router.patch('/planet-access', authenticateToken, requireAdmin, async (req, res)
     }
 });
 
+router.patch('/planet/:planetName/location', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const { planetName } = req.params;
+        const { locationName, faction } = req.body;
+
+        const validFactions = ['Republic', 'Separatists', 'Mandalore', 'Independent'];
+        if (!validFactions.includes(faction)) {
+            return res.status(400).json({ error: 'Invalid faction' });
+        }
+
+        const snapshot = await db().ref(`mapData/planets/${planetName}/locations/${locationName}`).once('value');
+        if (snapshot.val() === null) {
+            return res.status(404).json({ error: 'Location not found' });
+        }
+
+        await db().ref(`mapData/planets/${planetName}/locations/${locationName}`).set(faction);
+        res.json({ message: `${locationName} on ${planetName} set to ${faction}` });
+    } catch (error) {
+        console.error('Error updating location:', error);
+        res.status(500).json({ error: 'Failed to update location' });
+    }
+});
+
 module.exports = router;

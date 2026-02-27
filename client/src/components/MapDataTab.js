@@ -200,6 +200,26 @@ function MapDataTab() {
     function PlanetCard({ name, planet, editMode, isChanged, onUpdate }) {
         const reputation = (planet.reputation || planet.efficiency || 1.0) * 100;
         const [selectedBuilding, setSelectedBuilding] = useState('');
+        const [locationMessage, setLocationMessage] = useState('');
+
+        const updateLocation = async (locationName, faction) => {
+            try {
+                await api.patch(`/mapdata/planet/${encodeURIComponent(name)}/location`, {
+                    locationName,
+                    faction
+                });
+                setLocationMessage(`✅ ${locationName} → ${faction}`);
+                setTimeout(() => setLocationMessage(''), 3000);
+            } catch (error) {
+                setLocationMessage(`❌ Failed to update ${locationName}`);
+                setTimeout(() => setLocationMessage(''), 3000);
+            }
+        };
+
+        const factionColor = { Republic: '#4fc3f7', Separatists: '#f44336', Mandalore: '#ff9800', Independent: '#888' };
+
+        const locations = planet.locations || {};
+        const locationEntries = Object.entries(locations);
 
         if (!editMode) {
             return (
@@ -209,16 +229,25 @@ function MapDataTab() {
                         <div><strong>Faction:</strong> <span style={{ color: getFactionColor(planet.faction) }}>{planet.faction}</span></div>
                         <div><strong>Reputation:</strong> <span style={{ color: getReputationColor(reputation) }}>{Math.round(reputation)}%</span></div>
                         {planet.description && <div><strong>Description:</strong> {planet.description}</div>}
-                        {planet.customFactionImage && <div><strong>Custom Icon:</strong> {planet.customFactionImage}</div>}
                         {planet.currentBuilding && (
                             <div className="current-building">
                                 <strong>Building:</strong> {planet.currentBuilding.type}
                                 <div className="building-details">
                                     Started: {new Date(planet.currentBuilding.startDate).toLocaleDateString()}
-                                    <br />
-                                    Completes: {new Date(planet.currentBuilding.completionDate).toLocaleDateString()}
-                                    <br />
-                                    Cost: {planet.currentBuilding.cost.toLocaleString()} credits
+                                    <br />Completes: {new Date(planet.currentBuilding.completionDate).toLocaleDateString()}
+                                    <br />Cost: {planet.currentBuilding.cost.toLocaleString()} credits
+                                </div>
+                            </div>
+                        )}
+                        {locationEntries.length > 0 && (
+                            <div className="locations-section">
+                                <strong>Locations ({locationEntries.length}):</strong>
+                                <div className="location-list-view">
+                                    {locationEntries.map(([locName, faction]) => (
+                                        <span key={locName} className="location-badge" style={{ borderColor: factionColor[faction] }}>
+                                            <span style={{ color: factionColor[faction] }}>●</span> {locName}
+                                        </span>
+                                    ))}
                                 </div>
                             </div>
                         )}
@@ -242,34 +271,44 @@ function MapDataTab() {
                     </div>
                     <div className="form-group">
                         <label>Reputation (%):</label>
-                        <input
-                            type="number"
-                            value={Math.round(reputation)}
-                            onChange={(e) => onUpdate(name, 'reputation', e.target.value)}
-                            min="0"
-                            max="200"
-                        />
+                        <input type="number" value={Math.round(reputation)} onChange={(e) => onUpdate(name, 'reputation', e.target.value)} min="0" max="200" />
                         <small>100% = normal, 80% = reduced, 120% = bonus</small>
                     </div>
                     <div className="form-group">
                         <label>Description:</label>
-                        <textarea
-                            value={planet.description || ''}
-                            onChange={(e) => onUpdate(name, 'description', e.target.value)}
-                            rows="3"
-                        />
+                        <textarea value={planet.description || ''} onChange={(e) => onUpdate(name, 'description', e.target.value)} rows="3" />
                     </div>
                     <div className="form-group">
                         <label>Custom Faction Image ID:</label>
-                        <input
-                            type="text"
-                            value={planet.customFactionImage || ''}
-                            onChange={(e) => onUpdate(name, 'customFactionImage', e.target.value)}
-                            placeholder="rbxassetid://123456789"
-                        />
+                        <input type="text" value={planet.customFactionImage || ''} onChange={(e) => onUpdate(name, 'customFactionImage', e.target.value)} placeholder="rbxassetid://123456789" />
                     </div>
-                    
-                    {/* Building Projects Section */}
+
+                    {/* Locations Section */}
+                    {locationEntries.length > 0 && (
+                        <div className="form-group locations-edit-section">
+                            <label>Location Control:</label>
+                            {locationMessage && <div className="location-message">{locationMessage}</div>}
+                            <div className="location-edit-list">
+                                {locationEntries.map(([locName, faction]) => (
+                                    <div key={locName} className="location-edit-row">
+                                        <span className="location-edit-name">{locName}</span>
+                                        <select
+                                            value={faction}
+                                            onChange={(e) => updateLocation(locName, e.target.value)}
+                                            style={{ borderColor: factionColor[faction] }}
+                                        >
+                                            <option value="Republic">Republic</option>
+                                            <option value="Separatists">Separatists</option>
+                                            <option value="Mandalore">Mandalore</option>
+                                            <option value="Independent">Independent</option>
+                                        </select>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Building Section */}
                     <div className="form-group building-section">
                         <label>Building Projects:</label>
                         {planet.currentBuilding ? (
@@ -277,46 +316,26 @@ function MapDataTab() {
                                 <div><strong>Current:</strong> {planet.currentBuilding.type}</div>
                                 <div>Completes: {new Date(planet.currentBuilding.completionDate).toLocaleDateString()}</div>
                                 <div>Cost: {planet.currentBuilding.cost.toLocaleString()} credits</div>
-                                <button 
-                                    onClick={() => cancelBuilding(name)} 
-                                    className="btn-cancel-building"
-                                    type="button"
-                                >
-                                    Cancel Building
-                                </button>
+                                <button onClick={() => cancelBuilding(name)} className="btn-cancel-building" type="button">Cancel Building</button>
                             </div>
                         ) : (
                             <div className="building-selector">
-                                <select 
-                                    value={selectedBuilding} 
-                                    onChange={(e) => setSelectedBuilding(e.target.value)}
-                                >
+                                <select value={selectedBuilding} onChange={(e) => setSelectedBuilding(e.target.value)}>
                                     <option value="">-- Select Building --</option>
                                     {Object.entries(BUILDING_TYPES).map(([type, info]) => (
-                                        <option key={type} value={type}>
-                                            {type} - {info.cost.toLocaleString()} credits - {info.days} days
-                                        </option>
+                                        <option key={type} value={type}>{type} - {info.cost.toLocaleString()} credits - {info.days} days</option>
                                     ))}
                                 </select>
                                 {selectedBuilding && (
                                     <div className="building-info">
                                         <small>{BUILDING_TYPES[selectedBuilding].description}</small>
-                                        <button 
-                                            onClick={() => {
-                                                addBuilding(name, selectedBuilding);
-                                                setSelectedBuilding('');
-                                            }} 
-                                            className="btn-start-building"
-                                            type="button"
-                                        >
-                                            Start Construction
-                                        </button>
+                                        <button onClick={() => { addBuilding(name, selectedBuilding); setSelectedBuilding(''); }} className="btn-start-building" type="button">Start Construction</button>
                                     </div>
                                 )}
                             </div>
                         )}
                     </div>
-                    
+
                     {isChanged && <div className="change-indicator">📝 Changes pending...</div>}
                 </div>
             </div>
