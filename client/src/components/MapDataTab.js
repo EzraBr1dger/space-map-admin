@@ -389,6 +389,7 @@ function MapDataTab() {
                                 {active ? (
                                     <div className="senate-active">
                                         <span className="senate-status">✅ Active since {new Date(active.startDate).toLocaleDateString()}</span>
+                                        <span className="senate-completion">Completes: {new Date(active.completionDate).toLocaleDateString()}</span>
                                         <button onClick={() => cancelSenateProject(name)} className="btn-cancel-building">Cancel Project</button>
                                     </div>
                                 ) : (

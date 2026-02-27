@@ -236,8 +236,12 @@ router.post('/senate-project', authenticateToken, requireAdmin, async (req, res)
             return res.status(400).json({ error: `${projectName} is already active` });
         }
 
+        const completionDate = new Date();
+        completionDate.setDate(completionDate.getDate() + 7);
+
         mapData.senateProjects[projectName] = {
             startDate: new Date().toISOString(),
+            completionDate: completionDate.toISOString(),
             cost
         };
 

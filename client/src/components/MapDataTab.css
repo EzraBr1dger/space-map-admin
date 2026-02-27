@@ -221,6 +221,11 @@
     white-space: nowrap;
 }
 
+.senate-completion {
+    color: #64ffda;
+    font-size: 0.85rem;
+}
+
 .senate-desc {
     color: #aaa;
     font-size: 0.85rem;
