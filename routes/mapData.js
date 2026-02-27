@@ -21,6 +21,7 @@ router.get('/', authenticateToken, async (req, res) => {
         res.json({ 
             planets: mapData.planets || {},
             sectors: mapData.sectors || {},
+            senateProjects: mapData.senateProjects || {},
             lastUpdate: mapData.lastUpdate || null
         });
     } catch (error) {
