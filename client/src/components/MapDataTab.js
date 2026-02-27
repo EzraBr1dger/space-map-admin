@@ -396,6 +396,7 @@ function MapDataTab() {
                                             <br />
                                             Cost: {active.cost.toLocaleString()} credits
                                         </div>
+                                        <button onClick={() => cancelSenateProject(name)} className="btn-cancel">Cancel Project</button>
                                     </div>
                                 ) : (
                                     <button onClick={() => startSenateProject(name)} className="btn-start-building">Fund Project</button>

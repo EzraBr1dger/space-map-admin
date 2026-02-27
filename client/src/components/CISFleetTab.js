@@ -25,7 +25,6 @@ const calculateTravelDays = (from, to) => {
 };
 
 function CISFleetTab() {
-    const { user } = useAuth();
     const [fleets, setFleets] = useState({});
     const [planets, setPlanets] = useState([]);
     const [selectedFleets, setSelectedFleets] = useState([]);
