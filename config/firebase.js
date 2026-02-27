@@ -108,7 +108,6 @@ const FirebaseHelpers = {
         }
     },
 
-    // Deduct faction credits (COMMENTED OUT FOR TESTING)
     async deductFactionCredits(faction, amount) {
         try {
             if (faction !== 'Republic') {
@@ -121,15 +120,10 @@ const FirebaseHelpers = {
                 throw new Error(`Insufficient credits. Republic has ${currentCredits.toLocaleString()}, needs ${amount.toLocaleString()}`);
             }
             
-            // TODO: UNCOMMENT WHEN READY TO ACTUALLY DEDUCT CREDITS
-            /*
             const newCredits = currentCredits - amount;
             await db.ref('globalSupply/items/Credits').set(newCredits);
             console.log(`✅ Deducted ${amount} credits. New balance: ${newCredits}`);
-            */
-            
-            console.log(`💰 TESTING MODE: Would deduct ${amount} credits (current: ${currentCredits.toLocaleString()})`);
-            return currentCredits;
+            return newCredits;
         } catch (error) {
             console.error(`Error deducting credits:`, error);
             throw error;
