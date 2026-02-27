@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import './FleetTab.css';
-import { useAuth } from '../context/AuthContext';
 
 const CIS_GROUPS = ['Grievous Fleet', 'Dooku Command', 'Muun Banking Clan', 'Trade Federation', 'Techno Union', 'Unassigned'];
 
