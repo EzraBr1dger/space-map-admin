@@ -5,7 +5,7 @@ import './MapDataTab.css';
 const SENATE_PROJECTS = {
     'Republic Shipyard Network': { cost: 5000000, description: '+10% starship production faction-wide' },
     'Grand Army Reinforcement Act': { cost: 7500000, description: 'Doubles Current Stocks' },
-    'The Peace Accord of Naboo': { cost: 50000000, description: 'Might end the War Diplomatically' }
+    'The Peace Accord Of Naboo': { cost: 50000000, description: 'Might end the War Diplomatically' }
 };
 
 const BUILDING_TYPES = {
