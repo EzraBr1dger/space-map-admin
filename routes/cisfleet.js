@@ -33,8 +33,9 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
             travelingTo: null,
             arrivalDate: null,
             composition: {
-                lucrehulks: composition.lucrehulks || 0,
-                frigates: composition.frigates || 0
+                dreadnoughts: composition.dreadnoughts || 0,
+                munificents: composition.munificents || 0,
+                providences: composition.providences || 0
             },
             created: new Date().toISOString()
         };
