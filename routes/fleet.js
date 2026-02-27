@@ -29,6 +29,7 @@ router.post('/', authenticateToken, requireAdmiralOrAdmin, async (req, res) => {
             fleetName,
             commander,
             battalion,
+            description: description || '',
             currentPlanet: startingPlanet,
             travelingTo: null,
             departureDate: null,
@@ -95,7 +96,8 @@ router.put('/:fleetId', authenticateToken, requireAdmiralOrAdmin, async (req, re
             fleetName,
             commander,
             battalion,
-            composition
+            composition,
+            description: description || ''
         };
 
         await FirebaseHelpers.updateFleet(fleetId, updateData);
