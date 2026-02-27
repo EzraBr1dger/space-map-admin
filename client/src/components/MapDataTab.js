@@ -201,8 +201,10 @@ function MapDataTab() {
         const reputation = (planet.reputation || planet.efficiency || 1.0) * 100;
         const [selectedBuilding, setSelectedBuilding] = useState('');
         const [locationMessage, setLocationMessage] = useState('');
+        const [localLocations, setLocalLocations] = useState(planet.locations || {});
 
         const updateLocation = async (locationName, faction) => {
+            setLocalLocations(prev => ({ ...prev, [locationName]: faction }));
             try {
                 await api.patch(`/mapdata/planet/${encodeURIComponent(name)}/location`, {
                     locationName,
@@ -211,6 +213,7 @@ function MapDataTab() {
                 setLocationMessage(`✅ ${locationName} → ${faction}`);
                 setTimeout(() => setLocationMessage(''), 3000);
             } catch (error) {
+                setLocalLocations(prev => ({ ...prev, [locationName]: planet.locations[locationName] }));
                 setLocationMessage(`❌ Failed to update ${locationName}`);
                 setTimeout(() => setLocationMessage(''), 3000);
             }
@@ -219,7 +222,7 @@ function MapDataTab() {
         const factionColor = { Republic: '#4fc3f7', Separatists: '#f44336', Mandalore: '#ff9800', Independent: '#888' };
 
         const locations = planet.locations || {};
-        const locationEntries = Object.entries(locations);
+        const locationEntries = Object.entries(localLocations);
 
         if (!editMode) {
             return (
@@ -293,7 +296,7 @@ function MapDataTab() {
                                     <div key={locName} className="location-edit-row">
                                         <span className="location-edit-name">{locName}</span>
                                         <select
-                                            value={faction}
+                                            value={localLocations[locName]}
                                             onChange={(e) => updateLocation(locName, e.target.value)}
                                             style={{ borderColor: factionColor[faction] }}
                                         >
