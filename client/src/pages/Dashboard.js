@@ -6,6 +6,7 @@ import MapDataTab from '../components/MapDataTab';
 import AnnouncementsTab from '../components/AnnouncementsTab';
 import ActionsTab from '../components/ActionsTab';
 import FleetTab from '../components/FleetTab';
+import CISFleetTab from '../components/CISFleetTab';
 import './Dashboard.css';
 
 function Dashboard() {
@@ -138,6 +139,12 @@ function Dashboard() {
                             Actions
                         </button>
                         <button 
+                            className={`tab ${activeTab === 'cisfleet' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('cisfleet')}
+                        >
+                            CIS Fleet
+                        </button>
+                        <button 
                             className={`tab ${activeTab === 'announcements' ? 'active' : ''}`}
                             onClick={() => setActiveTab('announcements')}
                         >
@@ -151,6 +158,7 @@ function Dashboard() {
                         {activeTab === 'fleet' && <FleetTab />}
                         {activeTab === 'actions' && <ActionsTab />}
                         {activeTab === 'announcements' && <AnnouncementsTab />}
+                        {activeTab === 'cisfleet' && <CISFleetTab />}
                     </div>
                 </div>
             </div>
