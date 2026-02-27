@@ -225,4 +225,44 @@ router.post('/recalculate-sectors', authenticateToken, requireAdmin, async (req,
     }
 });
 
+router.post('/senate-project', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const { projectName, cost } = req.body;
+
+        const mapData = await FirebaseHelpers.getMapData() || {};
+        if (!mapData.senateProjects) mapData.senateProjects = {};
+
+        if (mapData.senateProjects[projectName]) {
+            return res.status(400).json({ error: `${projectName} is already active` });
+        }
+
+        mapData.senateProjects[projectName] = {
+            startDate: new Date().toISOString(),
+            cost
+        };
+
+        await FirebaseHelpers.updateMapData(mapData);
+        res.json({ message: `${projectName} funded successfully` });
+    } catch (error) {
+        res.status(500).json({ error: error.message || 'Failed to start senate project' });
+    }
+});
+
+router.delete('/senate-project/:projectName', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const { projectName } = req.params;
+
+        const mapData = await FirebaseHelpers.getMapData() || {};
+        if (!mapData.senateProjects?.[projectName]) {
+            return res.status(404).json({ error: 'Project not found' });
+        }
+
+        delete mapData.senateProjects[projectName];
+        await FirebaseHelpers.updateMapData(mapData);
+        res.json({ message: `${projectName} cancelled` });
+    } catch (error) {
+        res.status(500).json({ error: error.message || 'Failed to cancel senate project' });
+    }
+});
+
 module.exports = router;

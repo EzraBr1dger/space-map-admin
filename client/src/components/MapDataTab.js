@@ -2,6 +2,12 @@ import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import './MapDataTab.css';
 
+const SENATE_PROJECTS = {
+    'Republic Shipyard Network': { cost: 5000000, description: '+10% starship production faction-wide' },
+    'Grand Army Reinforcement Act': { cost: 7500000, description: 'Doubles Current Stocks' },
+    'The Peace Accord of Naboo': { cost: 50000000, description: 'Might end the War Diplomatically' }
+};
+
 const BUILDING_TYPES = {
     'Planetary Defenses': { cost: 750000, days: 3, description: 'Physical Emplacements of Turbo lasers and defenses' },
     'Production Facility': { cost: 500000, days: 2, description: '+50 Production' },
@@ -17,6 +23,8 @@ function MapDataTab() {
     const [originalMapData, setOriginalMapData] = useState({});
     const [changedItems, setChangedItems] = useState(new Set());
     const [message, setMessage] = useState({ type: '', text: '' });
+    const [senateProjects, setSenateProjects] = useState({});
+    const [senateMessage, setSenateMessage] = useState({ type: '', text: '' });
 
     useEffect(() => {
         loadMapData();
@@ -27,6 +35,7 @@ function MapDataTab() {
             const { data } = await api.get('/mapdata');
             setMapData(data);
             setOriginalMapData(JSON.parse(JSON.stringify(data))); // Deep copy
+            setSenateProjects(data.senateProjects || {});
         } catch (error) {
             console.error('Error loading map data:', error);
             showMessage('error', 'Failed to load map data');
@@ -158,6 +167,34 @@ function MapDataTab() {
         } catch (error) {
             showMessage('error', error.response?.data?.error || 'Failed to cancel building');
         }
+    };
+
+    const startSenateProject = async (projectName) => {
+        const project = SENATE_PROJECTS[projectName];
+        if (!project) return;
+
+        try {
+            const response = await api.post('/mapdata/senate-project', {
+                projectName,
+                cost: project.cost
+            });
+            setSenateMessage({ type: 'success', text: response.data.message });
+            await loadMapData();
+        } catch (error) {
+            setSenateMessage({ type: 'error', text: error.response?.data?.error || 'Failed to start project' });
+        }
+        setTimeout(() => setSenateMessage({ type: '', text: '' }), 5000);
+    };
+
+    const cancelSenateProject = async (projectName) => {
+        try {
+            await api.delete(`/mapdata/senate-project/${encodeURIComponent(projectName)}`);
+            setSenateMessage({ type: 'success', text: `${projectName} cancelled` });
+            await loadMapData();
+        } catch (error) {
+            setSenateMessage({ type: 'error', text: error.response?.data?.error || 'Failed to cancel project' });
+        }
+        setTimeout(() => setSenateMessage({ type: '', text: '' }), 5000);
     };
 
     function PlanetCard({ name, planet, editMode, isChanged, onUpdate }) {
@@ -328,6 +365,39 @@ function MapDataTab() {
                 <StatsSummary title="Planet Overview" stats={stats.planets} />
                 <StatsSummary title="Sector Control" stats={stats.sectors} />
                 <StatsSummary title="Faction Balance" stats={stats.factions} />
+            </div>
+
+            {/* Senate Projects */}
+            <div className="senate-section">
+                <h4>Senate Projects</h4>
+                <p className="senate-subtitle">Galaxy-wide initiatives funded by the Senate</p>
+
+                {senateMessage.text && (
+                    <div className={`message ${senateMessage.type}`}>{senateMessage.text}</div>
+                )}
+
+                <div className="senate-projects-grid">
+                    {Object.entries(SENATE_PROJECTS).map(([name, info]) => {
+                        const active = senateProjects[name];
+                        return (
+                            <div key={name} className={`senate-card ${active ? 'active' : ''}`}>
+                                <div className="senate-card-header">
+                                    <span className="senate-name">{name}</span>
+                                    <span className="senate-cost">{info.cost.toLocaleString()} Credits</span>
+                                </div>
+                                <p className="senate-desc">{info.description}</p>
+                                {active ? (
+                                    <div className="senate-active">
+                                        <span className="senate-status">✅ Active since {new Date(active.startDate).toLocaleDateString()}</span>
+                                        <button onClick={() => cancelSenateProject(name)} className="btn-cancel-building">Cancel Project</button>
+                                    </div>
+                                ) : (
+                                    <button onClick={() => startSenateProject(name)} className="btn-start-building">Fund Project</button>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
             </div>
 
             <div className="map-data-grid">
