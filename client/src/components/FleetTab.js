@@ -39,6 +39,7 @@ function FleetTab() {
     const [showAddModal, setShowAddModal] = useState(false);
     const [sortBy, setSortBy] = useState('default');
     const [sortValue, setSortValue] = useState('');
+    const [planetAccess, setPlanetAccess] = useState({});
 
     const [newFleet, setNewFleet] = useState({
         fleetName: '',
@@ -80,10 +81,15 @@ function FleetTab() {
                 api.get('/fleet'),
                 api.get('/mapdata')
             ]);
-            
             setFleets(fleetRes.data.fleets || {});
             setVenatorStats(fleetRes.data.venatorStats || { total: 0, assigned: 0, available: 0 });
-            setPlanets(Object.keys(mapRes.data.planets || {}));
+            const planetsData = mapRes.data.planets || {};
+            setPlanets(Object.keys(planetsData));
+            const access = {};
+            for (const [name, data] of Object.entries(planetsData)) {
+                access[name] = data.cisAccessible !== false;
+            }
+            setPlanetAccess(access);
             setLoading(false);
         } catch (error) {
             console.error('Error loading data:', error);
@@ -284,7 +290,7 @@ function FleetTab() {
                             }
                         }}>
                             <option value="">-- Select Destination --</option>
-                            {planets.map(planet => (
+                            {planets.filter(p => planetAccess[p] !== false).map(planet => (
                                 <option key={planet} value={planet}>{planet}</option>
                             ))}
                         </select>

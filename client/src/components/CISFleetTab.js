@@ -36,6 +36,7 @@ function CISFleetTab() {
     const [sortBy, setSortBy] = useState('default');
     const [sortValue, setSortValue] = useState('');
     const [instantMove, setInstantMove] = useState(false);
+    const [planetAccess, setPlanetAccess] = useState({});
 
     const [newFleet, setNewFleet] = useState({
         fleetName: '',
@@ -70,11 +71,29 @@ function CISFleetTab() {
                 api.get('/mapdata')
             ]);
             setFleets(fleetRes.data.fleets || {});
-            setPlanets(Object.keys(mapRes.data.planets || {}));
+            const planetsData = mapRes.data.planets || {};
+            setPlanets(Object.keys(planetsData));
+            const access = {};
+            for (const [name, data] of Object.entries(planetsData)) {
+                access[name] = data.cisAccessible !== false;
+            }
+            setPlanetAccess(access);
             setLoading(false);
         } catch (error) {
             showMessage('error', 'Failed to load CIS fleet data');
             setLoading(false);
+        }
+    };
+    
+
+    const togglePlanetAccess = async (planetName) => {
+        const newValue = !planetAccess[planetName];
+        setPlanetAccess(prev => ({ ...prev, [planetName]: newValue }));
+        try {
+            await api.patch('/mapdata/planet-access', { planetName, cisAccessible: newValue });
+        } catch (error) {
+            showMessage('error', 'Failed to update planet access');
+            setPlanetAccess(prev => ({ ...prev, [planetName]: !newValue }));
         }
     };
 
@@ -192,7 +211,7 @@ function CISFleetTab() {
                             }
                         }}>
                             <option value="">-- Select Destination --</option>
-                            {planets.map(p => <option key={p} value={p}>{p}</option>)}
+                            {planets.filter(p => planetAccess[p] !== false).map(p => <option key={p} value={p}>{p}</option>)}
                         </select>
                         <span className="travel-time">Travel Time: {travelDays} day{travelDays !== 1 ? 's' : ''}</span>
                         <label>
@@ -274,6 +293,22 @@ function CISFleetTab() {
                     </div>
                 </div>
             )}
+            <div className="planet-access-section">
+                <h4>Republic Fleet Travel Permissions</h4>
+                <p className="access-desc">Unchecked planets cannot be travelled to by Republic fleets.</p>
+                <div className="planet-access-list">
+                    {planets.map(planet => (
+                        <label key={planet} className="planet-access-item">
+                            <input
+                                type="checkbox"
+                                checked={planetAccess[planet] !== false}
+                                onChange={() => togglePlanetAccess(planet)}
+                            />
+                            {planet}
+                        </label>
+                    ))}
+                </div>
+            </div>
         </div>
     );
 }

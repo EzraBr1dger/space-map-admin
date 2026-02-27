@@ -18,6 +18,18 @@ router.get('/', authenticateToken, requireAdmin, async (req, res) => {
     }
 });
 
+router.patch('/planet-access', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const { planetName, cisAccessible } = req.body;
+        const snapshot = await db().ref(`mapData/planets/${planetName}`).once('value');
+        if (!snapshot.val()) return res.status(404).json({ error: 'Planet not found' });
+        await db().ref(`mapData/planets/${planetName}`).update({ cisAccessible });
+        res.json({ message: 'Planet access updated' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to update planet access' });
+    }
+});
+
 router.post('/', authenticateToken, requireAdmin, async (req, res) => {
     try {
         const { fleetName, commander, group, startingPlanet, composition, description } = req.body;

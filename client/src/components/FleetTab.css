@@ -225,3 +225,50 @@
 .btn-cancel {
     background: #f44336;
 }
+
+.planet-access-section {
+    margin-top: 30px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 100, 100, 0.3);
+}
+
+.planet-access-section h4 {
+    color: #ff6464;
+    margin-bottom: 5px;
+}
+
+.access-desc {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.85rem;
+    margin-bottom: 15px;
+}
+
+.planet-access-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 10px;
+}
+
+.planet-access-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #fff;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.05);
+    transition: background 0.2s;
+}
+
+.planet-access-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.planet-access-item input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
