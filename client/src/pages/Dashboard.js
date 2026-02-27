@@ -188,4 +188,4 @@ function formatNumber(num) {
     return new Intl.NumberFormat().format(num);
 }
 
-export default Dashboard;
+export default Dashboard; 
