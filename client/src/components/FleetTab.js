@@ -201,7 +201,8 @@ function FleetTab() {
                 fleetName: editingFleet.fleetName,
                 commander: editingFleet.commander,
                 battalion: editingFleet.battalion,
-                composition: editingFleet.composition
+                composition: editingFleet.composition,
+                description: editingFleet.description || ''
             });
             showMessage('success', 'Fleet updated successfully');
             setEditingFleet(null);
