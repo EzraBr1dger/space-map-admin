@@ -189,6 +189,7 @@ function FleetTab() {
     };
 
     const updateFleet = async () => {
+        console.log('DESCRIPTION BEING SENT:', editingFleet.description);
         const venatorDifference = editingFleet.composition.venators - (fleets[editingFleet.id]?.composition?.venators || 0);
         
         if (venatorDifference > venatorStats.available) {
