@@ -15,7 +15,7 @@ const users = [
     {
         id: 2,
         username: 'Admiral',
-        password: '$2a$10$iKPIV.wytj4HfAo9vjBpdOPvYXup.pTPyRa2UDkuXUUqtigbkT3w2', // Generate with: bcrypt.hash('admiralpass', 10)
+        password: '$2a$10$yKNM/NpQAmnIU44748RmEuwysaSRJiyhMnNnD687aiqwDEw.AgPkS', // Generate with: bcrypt.hash('admiralpass', 10)
         role: 'admiral'
     }
 ];
