@@ -31,7 +31,8 @@ function FleetTab() {
     const [planets, setPlanets] = useState([]);
     const [selectedFleets, setSelectedFleets] = useState([]);
     const [destination, setDestination] = useState('');
-    const [travelDays, setTravelDays] = useState(3);
+    //const [travelDays, setTravelDays] = useState(3);
+    const [travelDays, setTravelDays] = useState(0.25);
     const [instantMove, setInstantMove] = useState(false);
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState({ type: '', text: '' });
@@ -283,11 +284,11 @@ function FleetTab() {
                     <div className="move-controls">
                         <select value={destination} onChange={(e) => {
                             setDestination(e.target.value);
-                            if (e.target.value && fleets[selectedFleets[0]]) {
-                                const from = fleets[selectedFleets[0]].currentPlanet;
-                                const days = calculateTravelDays(from, e.target.value);
-                                setTravelDays(days);
-                            }
+                            // if (e.target.value && fleets[selectedFleets[0]]) {
+                            //     const from = fleets[selectedFleets[0]].currentPlanet;
+                            //     const days = calculateTravelDays(from, e.target.value);
+                            //     setTravelDays(days);
+                            // }
                         }}>
                             <option value="">-- Select Destination --</option>
                             {planets.filter(p => planetAccess[p] !== false).map(planet => (
@@ -295,7 +296,8 @@ function FleetTab() {
                             ))}
                         </select>
                         
-                        <span className="travel-time">Travel Time: {travelDays} day{travelDays !== 1 ? 's' : ''}</span>
+                        <span className="travel-time">Travel Time: 6 hours</span>
+                        {/* <span className="travel-time">Travel Time: {travelDays} day{travelDays !== 1 ? 's' : ''}</span> */}
                         
                         {user?.role === 'admin' && (
                             <label>
