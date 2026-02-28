@@ -32,7 +32,6 @@ function FleetTab() {
     const [selectedFleets, setSelectedFleets] = useState([]);
     const [destination, setDestination] = useState('');
     //const [travelDays, setTravelDays] = useState(3);
-    const [travelDays, setTravelDays] = useState(0.25);
     const [instantMove, setInstantMove] = useState(false);
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState({ type: '', text: '' });
