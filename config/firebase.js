@@ -231,7 +231,7 @@ const FirebaseHelpers = {
                 }
             }
             
-            await db.ref(`fleets/${fleetId}`).set({ ...existingFleet, ...updateData });
+            await db.ref(`fleets/${fleetId}`).set({...existingFleet,...updateData, description: updateData.description ?? ''});
             console.log(`✅ Fleet ${fleetId} updated`);
             return true;
         } catch (error) {
