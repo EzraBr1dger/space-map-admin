@@ -299,7 +299,6 @@ function FleetTab() {
                         </select>
                         
                         <span className="travel-time">Travel Time: 6 hours</span>
-                        {/* <span className="travel-time">Travel Time: {travelDays} day{travelDays !== 1 ? 's' : ''}</span> */}
                         
                         {user?.role === 'admin' && (
                             <label>
