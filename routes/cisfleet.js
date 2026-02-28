@@ -33,8 +33,7 @@ router.patch('/planet-access', authenticateToken, requireAdmin, async (req, res)
 router.post('/', authenticateToken, requireAdmin, async (req, res) => {
     try {
         const { fleetName, commander, group, startingPlanet, composition, description } = req.body;
-        const fleets = await getCISFleets();
-        const fleetId = `cisfleet-${Object.keys(fleets).length + 1}`;
+        const fleetId = `cisfleet-${Date.now()}`;
 
         const fleet = {
             fleetName,
