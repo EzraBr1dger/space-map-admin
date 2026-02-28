@@ -85,6 +85,10 @@ router.put('/:fleetId', authenticateToken, requireAdmiralOrAdmin, async (req, re
         const { fleetId } = req.params;
         const { fleetName, commander, battalion, composition, description } = req.body;
 
+        
+        console.log('UPDATE FLEET BODY:', req.body);
+        console.log('DESCRIPTION:', description);
+
         const existingFleet = (await db().ref(`fleets/${fleetId}`).once('value')).val();
         
         if (!existingFleet) {
@@ -125,5 +129,6 @@ router.delete('/:fleetId', authenticateToken, requireAdmiralOrAdmin, async (req,
         res.status(500).json({ error: 'Failed to delete fleet' });
     }
 });
+
 
 module.exports = router;
