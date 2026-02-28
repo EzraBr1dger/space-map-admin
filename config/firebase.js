@@ -215,13 +215,11 @@ const FirebaseHelpers = {
     // Update fleet
     async updateFleet(fleetId, updateData) {
         try {
-            // Get existing fleet
             const existingFleet = (await db.ref(`fleets/${fleetId}`).once('value')).val();
             if (!existingFleet) {
                 throw new Error('Fleet not found');
             }
             
-            // If composition changed, validate venator availability
             if (updateData.composition?.venators !== existingFleet.composition?.venators) {
                 const venatorStats = await this.getAvailableVenators();
                 const currentlyAssigned = existingFleet.composition?.venators || 0;
@@ -233,7 +231,7 @@ const FirebaseHelpers = {
                 }
             }
             
-            await db.ref(`fleets/${fleetId}`).update(updateData);
+            await db.ref(`fleets/${fleetId}`).set({ ...existingFleet, ...updateData });
             console.log(`✅ Fleet ${fleetId} updated`);
             return true;
         } catch (error) {
