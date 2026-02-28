@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 
 const BATTALIONS = ['501st', '212th', '104th', '91st', '41st Elite', '21st', 'Coruscant Guard', 'Unassigned'];
 
-const PLANET_DISTANCES = {
+/*const PLANET_DISTANCES = {
     'Coruscant-Kamino': 2,
     'Coruscant-Naboo': 1,
     'Coruscant-Alderaan': 1,
@@ -15,14 +15,14 @@ const PLANET_DISTANCES = {
     'Coruscant-Ryloth': 6,
     'Coruscant-Tatooine': 7,
     'Coruscant-Mustafar': 7,
-};
+};*/
 
-const calculateTravelDays = (from, to) => {
+/*const calculateTravelDays = (from, to) => {
     if (from === to) return 0;
     const key1 = `${from}-${to}`;
     const key2 = `${to}-${from}`;
     return PLANET_DISTANCES[key1] || PLANET_DISTANCES[key2] || 5;
-};
+};*/
 
 function FleetTab() {
     const { user } = useAuth();
