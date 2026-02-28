@@ -166,7 +166,6 @@ const FirebaseHelpers = {
         }
     },
 
-    // Calculate available venators (total - assigned)
     async getAvailableVenators() {
         try {
             const supplyData = await this.getSupplyData();
@@ -177,6 +176,7 @@ const FirebaseHelpers = {
             
             for (const fleet of Object.values(fleets)) {
                 assignedVenators += fleet.composition?.venators || 0;
+                assignedVenators += fleet.composition?.frigates || 0;
             }
             
             return {
