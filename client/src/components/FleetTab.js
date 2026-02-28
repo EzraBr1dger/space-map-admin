@@ -337,7 +337,7 @@ function FleetTab() {
                             )}
                             {fleet.travelingTo && (
                                 <p className="in-transit">
-                                    In Transit to {fleet.travelingTo} - Arrives {new Date(fleet.arrivalDate).toLocaleDateString()}
+                                    In Transit to {fleet.travelingTo} - Arrives {new Date(fleet.arrivalDate).toLocaleString()}
                                 </p>
                             )}
                         </div>
