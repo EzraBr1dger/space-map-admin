@@ -262,9 +262,9 @@ function CISFleetTab() {
                         <select value={newFleet.startingPlanet} onChange={(e) => setNewFleet({ ...newFleet, startingPlanet: e.target.value })}>
                             {planets.map(p => <option key={p} value={p}>{p}</option>)}
                         </select>
-                        <input type="number" min="0" placeholder="Dreadnoughts" value={editingFleet.composition?.dreadnoughts || ''} onChange={(e) => setEditingFleet({ ...editingFleet, composition: { ...editingFleet.composition, dreadnoughts: parseInt(e.target.value) || 0 } })} />
-                        <input type="number" min="0" placeholder="Munificents" value={editingFleet.composition?.munificents || ''} onChange={(e) => setEditingFleet({ ...editingFleet, composition: { ...editingFleet.composition, munificents: parseInt(e.target.value) || 0 } })} />
-                        <input type="number" min="0" placeholder="Providences" value={editingFleet.composition?.providences || ''} onChange={(e) => setEditingFleet({ ...editingFleet, composition: { ...editingFleet.composition, providences: parseInt(e.target.value) || 0 } })} />
+                        <input type="number" min="0" placeholder="Dreadnoughts" value={newFleet.composition?.dreadnoughts || ''} onChange={(e) => setNewFleet({ ...newFleet, composition: { ...newFleet.composition, dreadnoughts: parseInt(e.target.value) || 0 } })} />
+                        <input type="number" min="0" placeholder="Munificents" value={newFleet.composition?.munificents || ''} onChange={(e) => setNewFleet({ ...newFleet, composition: { ...newFleet.composition, munificents: parseInt(e.target.value) || 0 } })} />
+                        <input type="number" min="0" placeholder="Providences" value={newFleet.composition?.providences || ''} onChange={(e) => setNewFleet({ ...newFleet, composition: { ...newFleet.composition, providences: parseInt(e.target.value) || 0 } })} />
                         <textarea placeholder="Fleet description (optional)" value={newFleet.description || ''} onChange={(e) => setNewFleet({ ...newFleet, description: e.target.value })} rows={3} />
                         <div className="modal-actions">
                             <button onClick={addFleet} className="btn-save">Create Fleet</button>
