@@ -197,7 +197,7 @@ function FleetTab() {
             await api.put(`/fleet/${editingFleet.id}`, {
                 fleetName: editingFleet.fleetName,
                 commander: editingFleet.commander,
-                battalion: editingFleet.battalion,
+                battalions: editingFleet.battalions || [],
                 composition: editingFleet.composition,
                 description: editingFleet.description || ''
             });
@@ -339,7 +339,11 @@ function FleetTab() {
                             )}
                         </div>
                         <div className="venator-actions">
-                            <button onClick={() => setEditingFleet({ id, ...fleet })} className="btn-edit">Edit</button>
+                            <button onClick={() => setEditingFleet({ 
+                                id, 
+                                ...fleet, 
+                                battalions: fleet.battalions || (fleet.battalion ? [fleet.battalion] : [])
+                            })} className="btn-edit">Edit</button>
                             <button onClick={() => deleteFleet(id)} className="btn-delete">Delete</button>
                         </div>
                     </div>
