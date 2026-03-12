@@ -231,7 +231,14 @@ const FirebaseHelpers = {
                 }
             }
             
-            await db.ref(`fleets/${fleetId}`).set({...existingFleet,...updateData, description: updateData.description ?? ''});
+            await db.ref(`fleets/${fleetId}`).set({
+                ...existingFleet,
+                ...updateData,
+                description: updateData.description ?? '',
+                battalions: updateData.battalions && updateData.battalions.length > 0
+                    ? updateData.battalions.reduce((acc, val, i) => { acc[i] = val; return acc; }, {})
+                    : null
+            });
             console.log(`✅ Fleet ${fleetId} updated`);
             return true;
         } catch (error) {

@@ -54,8 +54,14 @@ function FleetTab() {
         const entries = Object.entries(fleets);
         
         if (sortBy === 'battalion' && sortValue) {
-            const matched = entries.filter(([_, f]) => f.battalion === sortValue);
-            const unmatched = entries.filter(([_, f]) => f.battalion !== sortValue);
+            const matched = entries.filter(([_, f]) => {
+                const bats = f.battalions ? Object.values(f.battalions) : (f.battalion ? [f.battalion] : []);
+                return bats.includes(sortValue);
+            });
+            const unmatched = entries.filter(([_, f]) => {
+                const bats = f.battalions ? Object.values(f.battalions) : (f.battalion ? [f.battalion] : []);
+                return !bats.includes(sortValue);
+            });
             return [...matched, ...unmatched];
         }
         
@@ -326,7 +332,7 @@ function FleetTab() {
                         <div className="venator-info">
                             <h4>{fleet.fleetName || id}</h4>
                             <p><strong>Commander:</strong> {fleet.commander || 'None'}</p>
-                            <p><strong>Battalion:</strong> {fleet.battalion}</p>
+                            <p><strong>Battalions:</strong> {fleet.battalions ? Object.values(fleet.battalions).join(', ') : (fleet.battalion || 'None')}</p>
                             <p><strong>Composition:</strong> {fleet.composition?.venators || 0} Venators, {fleet.composition?.frigates || 0} Frigates</p>
                             <p><strong>Location:</strong> {fleet.currentPlanet}</p>
                             {fleet.description && (
@@ -342,7 +348,9 @@ function FleetTab() {
                             <button onClick={() => setEditingFleet({ 
                                 id, 
                                 ...fleet, 
-                                battalions: fleet.battalions || (fleet.battalion ? [fleet.battalion] : [])
+                                battalions: fleet.battalions 
+                                    ? Object.values(fleet.battalions)
+                                    : (fleet.battalion ? [fleet.battalion] : [])
                             })} className="btn-edit">Edit</button>
                             <button onClick={() => deleteFleet(id)} className="btn-delete">Delete</button>
                         </div>
@@ -449,11 +457,12 @@ function FleetTab() {
                                 <label key={b} style={{display: 'flex', alignItems: 'center', gap: '8px', color: '#fff', marginBottom: '4px'}}>
                                     <input
                                         type="checkbox"
-                                        checked={(editingFleet.battalions || []).includes(b)}
+                                        checked={(Array.isArray(editingFleet.battalions) ? editingFleet.battalions : Object.values(editingFleet.battalions || {})).includes(b)}
                                         onChange={(e) => {
+                                            const current = Array.isArray(editingFleet.battalions) ? editingFleet.battalions : Object.values(editingFleet.battalions || {});
                                             const updated = e.target.checked
-                                                ? [...(editingFleet.battalions || []), b]
-                                                : (editingFleet.battalions || []).filter(x => x !== b);
+                                                ? [...current, b]
+                                                : current.filter(x => x !== b);
                                             setEditingFleet({ ...editingFleet, battalions: updated });
                                         }}
                                     />
