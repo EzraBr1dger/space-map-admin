@@ -23,12 +23,12 @@ router.get('/', authenticateToken, requireAdmiralOrAdmin, async (req, res) => {
 // Add new fleet
 router.post('/', authenticateToken, requireAdmiralOrAdmin, async (req, res) => {
     try {
-        const { fleetName, commander, battalion, startingPlanet, composition, description } = req.body;
+        const { fleetName, commander, battalions, startingPlanet, composition, description } = req.body;
         
         const fleet = await FirebaseHelpers.addFleet({
             fleetName,
             commander,
-            battalion,
+            battalions: battalions || [],
             description: description ?? '',
             currentPlanet: startingPlanet,
             travelingTo: null,
@@ -83,7 +83,8 @@ router.post('/move', authenticateToken, requireAdmiralOrAdmin, async (req, res) 
 router.put('/:fleetId', authenticateToken, requireAdmiralOrAdmin, async (req, res) => {
     try {
         const { fleetId } = req.params;
-        const { fleetName, commander, battalion, composition, description } = req.body;
+        const { fleetName, commander, battalions, composition, description } = req.body;
+
 
         
         console.log('UPDATE FLEET BODY:', req.body);
@@ -99,7 +100,7 @@ router.put('/:fleetId', authenticateToken, requireAdmiralOrAdmin, async (req, re
             ...existingFleet,
             fleetName,
             commander,
-            battalion,
+            battalions: battalions || [],
             composition,
             description: description ?? ''
         };

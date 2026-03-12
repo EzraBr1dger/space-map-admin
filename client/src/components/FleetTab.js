@@ -44,13 +44,10 @@ function FleetTab() {
     const [newFleet, setNewFleet] = useState({
         fleetName: '',
         commander: '',
-        battalion: 'Unassigned',
+        battalions: [], // changed from battalion
         startingPlanet: 'Coruscant',
         description: '',
-        composition: {
-            venators: 0,
-            frigates: 0
-        }
+        composition: { venators: 0, frigates: 0 }
     });
 
     const getSortedFleets = () => {
@@ -366,12 +363,24 @@ function FleetTab() {
                             value={newFleet.commander}
                             onChange={(e) => setNewFleet({ ...newFleet, commander: e.target.value })}
                         />
-                        <select
-                            value={newFleet.battalion}
-                            onChange={(e) => setNewFleet({ ...newFleet, battalion: e.target.value })}
-                        >
-                            {BATTALIONS.map(b => <option key={b} value={b}>{b}</option>)}
-                        </select>
+                        <div className="battalion-select">
+                            <label style={{color: '#fff', marginBottom: '8px', display: 'block'}}>Battalions:</label>
+                            {BATTALIONS.map(b => (
+                                <label key={b} style={{display: 'flex', alignItems: 'center', gap: '8px', color: '#fff', marginBottom: '4px'}}>
+                                    <input
+                                        type="checkbox"
+                                        checked={newFleet.battalions.includes(b)}
+                                        onChange={(e) => {
+                                            const updated = e.target.checked
+                                                ? [...newFleet.battalions, b]
+                                                : newFleet.battalions.filter(x => x !== b);
+                                            setNewFleet({ ...newFleet, battalions: updated });
+                                        }}
+                                    />
+                                    {b}
+                                </label>
+                            ))}
+                        </div>
                         <select
                             value={newFleet.startingPlanet}
                             onChange={(e) => setNewFleet({ ...newFleet, startingPlanet: e.target.value })}
@@ -430,12 +439,24 @@ function FleetTab() {
                             value={editingFleet.commander || ''}
                             onChange={(e) => setEditingFleet({ ...editingFleet, commander: e.target.value })}
                         />
-                        <select
-                            value={editingFleet.battalion}
-                            onChange={(e) => setEditingFleet({ ...editingFleet, battalion: e.target.value })}
-                        >
-                            {BATTALIONS.map(b => <option key={b} value={b}>{b}</option>)}
-                        </select>
+                        <div className="battalion-select">
+                            <label style={{color: '#fff', marginBottom: '8px', display: 'block'}}>Battalions:</label>
+                            {BATTALIONS.map(b => (
+                                <label key={b} style={{display: 'flex', alignItems: 'center', gap: '8px', color: '#fff', marginBottom: '4px'}}>
+                                    <input
+                                        type="checkbox"
+                                        checked={(editingFleet.battalions || []).includes(b)}
+                                        onChange={(e) => {
+                                            const updated = e.target.checked
+                                                ? [...(editingFleet.battalions || []), b]
+                                                : (editingFleet.battalions || []).filter(x => x !== b);
+                                            setEditingFleet({ ...editingFleet, battalions: updated });
+                                        }}
+                                    />
+                                    {b}
+                                </label>
+                            ))}
+                        </div>
                         <input
                             type="number"
                             min="0"
