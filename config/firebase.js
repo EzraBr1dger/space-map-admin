@@ -2,6 +2,12 @@ const admin = require('firebase-admin');
 
 let db = null;
 
+console.log('ENV CHECK:', {
+    project_id: process.env.FIREBASE_PROJECT_ID,
+    client_email: process.env.FIREBASE_CLIENT_EMAIL,
+    has_private_key: !!process.env.FIREBASE_PRIVATE_KEY
+});
+
 function initializeFirebase() {
     try {
         // Initialize Firebase Admin SDK
@@ -18,8 +24,6 @@ function initializeFirebase() {
             client_x509_cert_url: process.env.FIREBASE_CLIENT_CERT_URL
         };
 
-        // Alternative: Use service account file if you prefer
-        // const serviceAccount = require('../path/to/your/firebase-service-account.json');
 
         admin.initializeApp({
             credential: admin.credential.cert(serviceAccount),
@@ -27,6 +31,9 @@ function initializeFirebase() {
         });
 
         db = admin.database();
+        db.ref('.info/connected').once('value', (snap) => {
+            console.log('Firebase connection state:', snap.val());
+        });
         console.log('✅ Firebase Admin initialized successfully');
         
     } catch (error) {
