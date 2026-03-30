@@ -37,8 +37,20 @@ initializeFirebase();
 //}));
 
 app.use(cors({
-    origin: 'https://space-map-admin-frontend.vercel.app',
-    credentials: true
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+
+    if (
+      origin.includes("localhost") ||
+      origin.includes("space-map-admin-frontend.vercel.app") ||
+      origin.includes("vercel.app")
+    ) {
+      return callback(null, true);
+    }
+
+    return callback(new Error("Not allowed by CORS"));
+  },
+  credentials: true
 }));
 
 // Rate limiting
