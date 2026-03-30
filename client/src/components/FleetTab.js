@@ -3,7 +3,7 @@ import api from '../services/api';
 import './FleetTab.css';
 import { useAuth } from '../context/AuthContext';
 
-const BATTALIONS = ['501st', '212th', '104th', '91st', '41st Elite', '21st', 'Coruscant Guard', 'Unassigned'];
+const BATTALIONS = ['501st', '212th', '104th', '91st', '41st Elite', '21st', 'Coruscant Guard', 'Unassigned', '442nd', '87th'];
 
 /*const PLANET_DISTANCES = {
     'Coruscant-Kamino': 2,
