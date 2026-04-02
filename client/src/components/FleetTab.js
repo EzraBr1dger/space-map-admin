@@ -33,8 +33,9 @@ function FleetTab() {
     const [planets, setPlanets] = useState([]);
     const [selectedFleets, setSelectedFleets] = useState([]);
     const [destination, setDestination] = useState('');
-    const travelDays = 0.25;
+    const [travelDays, setTravelDays] = useState(0.25);
     const [instantMove, setInstantMove] = useState(false);
+    const [instantProgress, setInstantProgress] = useState(null);
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState({ type: '', text: '' });
     const [editingFleet, setEditingFleet] = useState(null);
@@ -146,20 +147,42 @@ function FleetTab() {
     const moveFleet = async () => {
         if (selectedFleets.length === 0) { showMessage('error', 'No fleets selected'); return; }
         if (!destination) { showMessage('error', 'No destination selected'); return; }
-        try {
-            const response = await api.post('/fleet/move', {
-                fleetIds: selectedFleets,
-                destination,
-                travelDays,
-                instantMove
-            });
-            showMessage('success', response.data.message);
-            deselectAll();
-            setDestination('');
-            await loadData();
-        } catch (error) {
-            showMessage('error', error.response?.data?.error || 'Failed to move fleet');
+
+        // Capture values now — interval callbacks won't see updated state
+        const payload = { fleetIds: [...selectedFleets], destination, travelDays, instantMove };
+
+        const doDispatch = async () => {
+            try {
+                const response = await api.post('/fleet/move', payload);
+                showMessage('success', response.data.message);
+                setInstantProgress(null);
+                deselectAll();
+                setDestination('');
+                await loadData();
+            } catch (error) {
+                setInstantProgress(null);
+                showMessage('error', error.response?.data?.error || 'Failed to move fleet');
+            }
+        };
+
+        if (instantMove) {
+            // 10-second animated progress bar before actual dispatch
+            setInstantProgress(0);
+            const startTime = Date.now();
+            const duration = 10000;
+            const tick = setInterval(() => {
+                const elapsed = Date.now() - startTime;
+                const pct = Math.min(100, Math.round((elapsed / duration) * 100));
+                setInstantProgress(pct);
+                if (pct >= 100) {
+                    clearInterval(tick);
+                    doDispatch();
+                }
+            }, 100);
+            return;
         }
+
+        await doDispatch();
     };
 
     const addFleet = async () => {
@@ -290,6 +313,45 @@ function FleetTab() {
 
     const sectorList = getSectors();
 
+    // Travel time: same sector=2h, adjacent=12h, each additional sector=+6h
+    const calculateTravelDays = (fromPlanet, toPlanet) => {
+        if (!fromPlanet || !toPlanet) return 0.25;
+        if (fromPlanet === toPlanet) return 2 / 24;
+        const fromPd = planetDetails[fromPlanet];
+        const toPd = planetDetails[toPlanet];
+        if (!fromPd || !toPd) return 0.25;
+        const fromSector = parseInt(fromPd.sector || fromPd.sectorNumber || 0);
+        const toSector = parseInt(toPd.sector || toPd.sectorNumber || 0);
+        if (!fromSector || !toSector) return 0.25;
+        if (fromSector === toSector) return 2 / 24;
+        const diff = Math.abs(fromSector - toSector);
+        if (diff === 1) return 12 / 24;
+        return (12 + (diff - 1) * 6) / 24;
+    };
+
+    const formatTravelTime = (days) => {
+        const hours = Math.round(days * 24);
+        return hours < 1 ? '<1H' : `${hours}H`;
+    };
+
+    // Determines controlling faction from backend control fields (highest value > 0 wins)
+    const getControllingFaction = (sector) => {
+        const candidates = [
+            { name: 'Republic', value: sector.repControl || 0, cls: 'ft-ctrl-rep' },
+            { name: 'CIS',      value: sector.sepControl || 0, cls: 'ft-ctrl-sep' },
+            { name: 'Mandalorian', value: sector.mndControl || 0, cls: 'ft-ctrl-mnd' },
+        ].filter(f => f.value > 0).sort((a, b) => b.value - a.value);
+        return candidates[0] || null;
+    };
+
+    // Admin 10-second bar: 0–25% red, 25–50% orange, 50–75% yellow, 75–100% green
+    const getInstantBarColor = (pct) => {
+        if (pct < 25) return '#f44336';
+        if (pct < 50) return '#ff9800';
+        if (pct < 75) return '#ffeb3b';
+        return '#4caf50';
+    };
+
     if (loading) return <div className="ft-loading">LOADING FLEET DATA...</div>;
 
     return (
@@ -347,12 +409,15 @@ function FleetTab() {
                                 </div>
                                 <div className="ft-sc-planets">{sector.planets.join(', ')}</div>
                                 <div className="ft-sc-control">
-                                    {sector.repControl > 0 && <span className="ft-ctrl-rep">REP {sector.repControl}%</span>}
-                                    {sector.sepControl > 0 && <span className="ft-ctrl-sep">SEP {sector.sepControl}%</span>}
-                                    {sector.mndControl > 0 && <span className="ft-ctrl-mnd">MND {sector.mndControl}%</span>}
-                                    {!sector.repControl && !sector.sepControl && !sector.mndControl && (
-                                        <span className="ft-ctrl-none">Unclaimed</span>
-                                    )}
+                                    {(() => {
+                                        const faction = getControllingFaction(sector);
+                                        return faction
+                                            ? <span className={`ft-ctrl-faction ${faction.cls}`}>{faction.name}</span>
+                                            : <span className="ft-ctrl-none">Unclaimed</span>;
+                                    })()}
+                                    {sector.repControl > 0 && <span className="ft-ctrl-pct ft-ctrl-rep">REP {sector.repControl}%</span>}
+                                    {sector.sepControl > 0 && <span className="ft-ctrl-pct ft-ctrl-sep">SEP {sector.sepControl}%</span>}
+                                    {sector.mndControl > 0 && <span className="ft-ctrl-pct ft-ctrl-mnd">MND {sector.mndControl}%</span>}
                                     {sector.assetCount > 0 && (
                                         <span className="ft-sc-assets">{sector.assetCount} assets present</span>
                                     )}
@@ -425,22 +490,44 @@ function FleetTab() {
                 <div className="ft-move-panel">
                     <div className="ft-move-title">◈ HYPERSPACE DISPATCH — {selectedFleets.length} UNIT(S) SELECTED</div>
                     <div className="ft-move-controls">
-                        <select className="ft-select" value={destination} onChange={(e) => setDestination(e.target.value)}>
+                        <select className="ft-select" value={destination} onChange={(e) => {
+                            const dest = e.target.value;
+                            setDestination(dest);
+                            if (dest && selectedFleets.length > 0) {
+                                const fromPlanet = fleets[selectedFleets[0]]?.currentPlanet;
+                                setTravelDays(calculateTravelDays(fromPlanet, dest));
+                            }
+                        }}>
                             <option value="">— SELECT DESTINATION —</option>
                             {planets.filter(p => planetAccess[p] !== false).map(planet => (
                                 <option key={planet} value={planet}>{planet}</option>
                             ))}
                         </select>
-                        <span className="ft-travel-badge">TRAVEL TIME: 6H</span>
+                        <span className="ft-travel-badge">
+                            TRAVEL TIME: {destination ? formatTravelTime(travelDays) : '—'}
+                        </span>
                         {user?.role === 'admin' && (
                             <label className="ft-instant-label">
-                                <input type="checkbox" checked={instantMove} onChange={(e) => setInstantMove(e.target.checked)} />
+                                <input type="checkbox" checked={instantMove} onChange={(e) => setInstantMove(e.target.checked)} disabled={instantProgress !== null} />
                                 INSTANT MOVE (ADMIN)
                             </label>
                         )}
-                        <button onClick={moveFleet} className="ft-btn ft-btn-move">DISPATCH</button>
-                        <button onClick={deselectAll} className="ft-btn ft-btn-cancel">CANCEL</button>
+                        <button onClick={moveFleet} className="ft-btn ft-btn-move" disabled={instantProgress !== null}>DISPATCH</button>
+                        <button onClick={deselectAll} className="ft-btn ft-btn-cancel" disabled={instantProgress !== null}>CANCEL</button>
                     </div>
+                    {instantProgress !== null && (
+                        <div className="ft-instant-prog-wrap">
+                            <div className="ft-instant-prog-label">
+                                ADMIN DISPATCH IN PROGRESS — {instantProgress}%
+                            </div>
+                            <div className="ft-instant-prog-track">
+                                <div
+                                    className="ft-instant-prog-fill"
+                                    style={{ width: `${instantProgress}%`, background: getInstantBarColor(instantProgress) }}
+                                />
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -469,6 +556,20 @@ function FleetTab() {
                                 <div className="ft-row-name-col">
                                     <span className="ft-row-name">{fleet.fleetName || id}</span>
                                     {fleet.commander && <span className="ft-row-cmdr">{fleet.commander}</span>}
+                                    {(() => {
+                                        const v = fleet.composition?.venators || 0;
+                                        const f = fleet.composition?.frigates || 0;
+                                        const bats = fleet.battalions
+                                            ? Object.values(fleet.battalions).filter(Boolean)
+                                            : (fleet.battalion && fleet.battalion !== 'Unassigned' ? [fleet.battalion] : []);
+                                        const parts = [];
+                                        if (v > 0) parts.push(`${v}V`);
+                                        if (f > 0) parts.push(`${f}F`);
+                                        if (bats.length > 0) parts.push(bats.join(', '));
+                                        return parts.length > 0
+                                            ? <span className="ft-row-composition">{parts.join(' · ')}</span>
+                                            : null;
+                                    })()}
                                 </div>
                                 <span className="ft-row-dash">–</span>
                                 <div className="ft-row-loc-col">
