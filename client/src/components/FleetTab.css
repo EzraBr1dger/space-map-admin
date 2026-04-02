@@ -305,6 +305,59 @@
     letter-spacing: 0.5px;
 }
 
+/* Controlling faction label in sector cards */
+.ft-ctrl-faction {
+    font-weight: 700;
+    font-size: 0.75rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+/* Percentage labels sit alongside the faction name, slightly subdued */
+.ft-ctrl-pct {
+    font-weight: 400;
+    font-size: 0.68rem;
+    opacity: 0.75;
+}
+
+/* Fleet row composition line (Venators · Frigates · Battalions) */
+.ft-row-composition {
+    color: rgba(192, 207, 224, 0.38);
+    font-size: 0.65rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: 0.3px;
+}
+
+/* Admin instant-move 10-second progress bar */
+.ft-instant-prog-wrap {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.ft-instant-prog-label {
+    color: #f0c040;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    margin-bottom: 7px;
+}
+
+.ft-instant-prog-track {
+    height: 8px;
+    background: rgba(255, 255, 255, 0.07);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.ft-instant-prog-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.12s linear, background 0.3s ease;
+}
+
 /*  FLEET CONTROLS  */
 .ft-controls {
     display: flex;
