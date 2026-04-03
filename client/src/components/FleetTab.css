@@ -330,6 +330,31 @@
     letter-spacing: 0.3px;
 }
 
+/* Fleet row "Reinforcing" status shown while battalion assignment is pending */
+.ft-row-reinforcing {
+    color: #f0c040;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    animation: ft-reinforce-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes ft-reinforce-pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.45; }
+}
+
+/* Countdown label in the Active Battalion Assignments section */
+.ft-assign-countdown {
+    color: rgba(192, 207, 224, 0.45);
+    font-size: 0.72rem;
+    white-space: nowrap;
+    margin-left: auto;
+}
+
 /* Admin instant-move 10-second progress bar */
 .ft-instant-prog-wrap {
     margin-top: 12px;
