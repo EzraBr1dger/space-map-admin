@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
 import './FleetTab.css';
 import { useAuth } from '../context/AuthContext';
@@ -36,6 +36,10 @@ function FleetTab() {
     const [travelDays, setTravelDays] = useState(0.25);
     const [instantMove, setInstantMove] = useState(false);
     const [instantProgress, setInstantProgress] = useState(null);
+    // { [fleetId]: { startTime, duration, payload, fleetName } }
+    const [pendingAssignments, setPendingAssignments] = useState({});
+    // Stores setTimeout IDs so they can be cleared on unmount
+    const assignmentTimersRef = useRef({});
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState({ type: '', text: '' });
     const [editingFleet, setEditingFleet] = useState(null);
@@ -54,7 +58,7 @@ function FleetTab() {
 
     //  NEW STATE
     const [planetDetails, setPlanetDetails] = useState({});
-    // Ticks every second — used only to re-render progress bars from real timestamps.
+    // Ticks every second : used only to re-render progress bars from real timestamps.
     // No API call is made here; all math uses departureDate/arrivalDate from backend.
     const [now, setNow] = useState(Date.now());
 
@@ -69,6 +73,12 @@ function FleetTab() {
         const poll = setInterval(() => loadData(), 30000);
         return () => clearInterval(poll);
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Clear any pending assignment timers when the component unmounts
+    useEffect(() => {
+        const timers = assignmentTimersRef.current;
+        return () => Object.values(timers).forEach(clearTimeout);
+    }, []);
 
     const getSortedFleets = () => {
         const entries = Object.entries(fleets);
@@ -207,14 +217,60 @@ function FleetTab() {
         if (venatorDifference > venatorStats.available) {
             showMessage('error', `Only ${venatorStats.available} Venators available`); return;
         }
+
+        const fleetId = editingFleet.id;
+        const fleetName = editingFleet.fleetName;
+        const payload = {
+            fleetName,
+            commander: editingFleet.commander,
+            battalions: editingFleet.battalions || [],
+            composition: editingFleet.composition,
+            description: editingFleet.description || ''
+        };
+
+        // Detect whether battalions actually changed
+        const currentFleet = fleets[fleetId];
+        const currentBatArr = currentFleet?.battalions
+            ? Object.values(currentFleet.battalions)
+            : (currentFleet?.battalion ? [currentFleet.battalion] : []);
+        const newBatArr = payload.battalions;
+        const batsChanged =
+            JSON.stringify([...newBatArr].sort()) !== JSON.stringify([...currentBatArr].sort());
+
+        // Delay only when: battalions changed AND the fleet isn't currently unassigned
+        if (batsChanged && !isCurrentlyUnassigned(currentFleet)) {
+            const duration = getBattalionAssignDuration();
+            const label = instantMove ? '10s (admin)' : '20 min';
+
+            setPendingAssignments(prev => ({
+                ...prev,
+                [fleetId]: { startTime: Date.now(), duration, payload, fleetName }
+            }));
+            showMessage('success', `Battalion reassignment queued — ${label} delay`);
+            setEditingFleet(null);
+
+            // Store timer ID so unmount cleanup can cancel it
+            assignmentTimersRef.current[fleetId] = setTimeout(async () => {
+                delete assignmentTimersRef.current[fleetId];
+                try {
+                    await api.put(`/fleet/${fleetId}`, payload);
+                    showMessage('success', `Battalions assigned to ${fleetName}`);
+                } catch (error) {
+                    showMessage('error', error.response?.data?.error || 'Battalion assignment failed');
+                }
+                setPendingAssignments(prev => {
+                    const next = { ...prev };
+                    delete next[fleetId];
+                    return next;
+                });
+                loadData();
+            }, duration);
+            return;
+        }
+
+        // Instant save - no battalion change, or fleet was previously unassigned
         try {
-            await api.put(`/fleet/${editingFleet.id}`, {
-                fleetName: editingFleet.fleetName,
-                commander: editingFleet.commander,
-                battalions: editingFleet.battalions || [],
-                composition: editingFleet.composition,
-                description: editingFleet.description || ''
-            });
+            await api.put(`/fleet/${fleetId}`, payload);
             showMessage('success', 'Fleet updated successfully');
             setEditingFleet(null);
             await loadData();
@@ -352,6 +408,32 @@ function FleetTab() {
         return '#4caf50';
     };
 
+    // 20 min normally; 10 s with admin bypass
+    const getBattalionAssignDuration = () => instantMove ? 10000 : 20 * 60 * 1000;
+
+    // True when the fleet's current battalions are empty or only "Unassigned"
+    const isCurrentlyUnassigned = (fleet) => {
+        const bats = fleet?.battalions
+            ? Object.values(fleet.battalions).filter(b => b && b !== 'Unassigned')
+            : (fleet?.battalion && fleet.battalion !== 'Unassigned' ? [fleet.battalion] : []);
+        return bats.length === 0;
+    };
+
+    // 0-100 progress for a pending battalion assignment, driven by the 1-second `now` tick
+    const getAssignProgress = (pa) => {
+        const elapsed = now - pa.startTime;
+        if (elapsed >= pa.duration) return 100;
+        return Math.min(99, Math.max(1, Math.round((elapsed / pa.duration) * 100)));
+    };
+
+    // Human-readable countdown for a pending assignment
+    const getAssignCountdown = (pa) => {
+        const remaining = Math.max(0, pa.startTime + pa.duration - now);
+        const mins = Math.floor(remaining / 60000);
+        const secs = Math.floor((remaining % 60000) / 1000);
+        return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+    };
+
     if (loading) return <div className="ft-loading">LOADING FLEET DATA...</div>;
 
     return (
@@ -461,6 +543,36 @@ function FleetTab() {
                 </div>
             )}
 
+            {/*  ACTIVE BATTALION ASSIGNMENTS  */}
+            {Object.keys(pendingAssignments).length > 0 && (
+                <div className="ft-routes-section">
+                    <div className="ft-section-header">
+                        <span className="ft-hdr-diamond">✦</span> ACTIVE BATTALION ASSIGNMENTS
+                    </div>
+                    {Object.entries(pendingAssignments).map(([fleetId, pa]) => {
+                        const pct = getAssignProgress(pa);
+                        const barColor = getInstantBarColor(pct);
+                        const countdown = getAssignCountdown(pa);
+                        const assignedBats = pa.payload.battalions.filter(b => b && b !== 'Unassigned');
+                        return (
+                            <div key={fleetId} className="ft-route-entry">
+                                <div className="ft-route-top">
+                                    <span className="ft-route-name">{pa.fleetName || fleetId}</span>
+                                    <span className="ft-route-path">
+                                        Reinforcing → <span className="ft-route-dest">{assignedBats.join(', ') || '—'}</span>
+                                    </span>
+                                    <span className="ft-route-pct" style={{ color: barColor }}>{pct}%</span>
+                                    <span className="ft-assign-countdown">{countdown} remaining</span>
+                                </div>
+                                <div className="ft-prog-wrap">
+                                    <div className="ft-prog-bar" style={{ width: `${pct}%`, background: barColor }} />
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
+
             {/*  FLEET CONTROLS  */}
             <div className="ft-controls">
                 <button onClick={() => setShowAddModal(true)} className="ft-btn ft-btn-add">+ ADD FLEET</button>
@@ -556,7 +668,11 @@ function FleetTab() {
                                 <div className="ft-row-name-col">
                                     <span className="ft-row-name">{fleet.fleetName || id}</span>
                                     {fleet.commander && <span className="ft-row-cmdr">{fleet.commander}</span>}
-                                    {(() => {
+                                    {pendingAssignments[id] ? (
+                                        <span className="ft-row-reinforcing">
+                                            ⟳ REINFORCING — {getAssignCountdown(pendingAssignments[id])}
+                                        </span>
+                                    ) : (() => {
                                         const v = fleet.composition?.venators || 0;
                                         const f = fleet.composition?.frigates || 0;
                                         const bats = fleet.battalions
@@ -606,6 +722,8 @@ function FleetTab() {
                                                 : (fleet.battalion ? [fleet.battalion] : [])
                                         })}
                                         className="ft-btn-sm ft-bsm-edit"
+                                        disabled={!!pendingAssignments[id]}
+                                        title={pendingAssignments[id] ? 'Assignment in progress' : ''}
                                     >EDIT</button>
                                     <button onClick={() => deleteFleet(id)} className="ft-btn-sm ft-bsm-del">DEL</button>
                                 </div>
