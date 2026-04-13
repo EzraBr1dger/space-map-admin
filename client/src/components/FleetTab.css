@@ -808,10 +808,108 @@
     margin-top: 14px;
 }
 
-/*  EDIT MODAL — TABBED LAYOUT  */
+/* ── EDIT MODAL — TABBED LAYOUT ── */
 .ft-modal-wide {
-    min-width: 480px;
-    max-width: 600px;
+    min-width: 860px;
+    max-width: 1300px;
+    width: 92vw;
+}
+
+/* 2-column grid: left = venators/frigates, right = battalions */
+.ft-assets-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 14px;
+}
+
+.ft-assets-left,
+.ft-assets-right {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+}
+
+@media (max-width: 860px) {
+    .ft-modal-wide { min-width: unset; width: 96vw; }
+    .ft-assets-grid { grid-template-columns: 1fr; }
+}
+
+/* scrollable battalion list */
+.ft-asset-block-scroll {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.ft-bat-scroll {
+    max-height: 220px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.ft-bat-scroll::-webkit-scrollbar { width: 4px; }
+.ft-bat-scroll::-webkit-scrollbar-track { background: transparent; }
+.ft-bat-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
+
+/* venator stat row */
+.ft-venator-stat-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+    font-size: 0.82rem;
+    color: #c0cfe0;
+}
+
+.ft-venator-stat-row strong { color: #2196f3; }
+
+/* quantity stepper row */
+.ft-qty-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.ft-qty-label {
+    font-size: 0.68rem;
+    color: rgba(192, 207, 224, 0.45);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.ft-qty-btn {
+    width: 28px;
+    height: 28px;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: #c0cfe0;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+    font-family: 'Courier New', Courier, monospace;
+    flex-shrink: 0;
+    padding: 0;
+    line-height: 1;
+}
+
+.ft-qty-btn:hover { background: rgba(255, 255, 255, 0.14); }
+
+.ft-qty-input {
+    width: 58px !important;
+    margin-bottom: 0 !important;
+    padding: 5px 8px !important;
+    text-align: center;
+    font-size: 0.82rem !important;
 }
 
 .ft-modal-hdr {
@@ -859,7 +957,7 @@
     border-bottom-color: #00c8ff;
 }
 
-/*  MANAGE ASSETS SHARED BLOCK  */
+/* ── MANAGE ASSETS — SHARED BLOCK ── */
 .ft-asset-block {
     background: rgba(4, 8, 20, 0.6);
     border: 1px solid rgba(255, 255, 255, 0.06);
@@ -877,7 +975,7 @@
     margin-bottom: 10px;
 }
 
-/*  VENATOR SECTION  */
+/* ── VENATOR SECTION ── */
 .ft-venator-row {
     display: flex;
     align-items: center;
@@ -971,7 +1069,7 @@
     font-size: 0.76rem !important;
 }
 
-/*  BATTALION ASSIGN/REMOVE ROWS  */
+/* ── BATTALION ASSIGN/REMOVE ROWS ── */
 .ft-bat-manage-row {
     display: flex;
     align-items: center;
@@ -996,6 +1094,9 @@
     color: #c0cfe0;
     font-size: 0.8rem;
     font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .ft-bat-conflict-tag {
