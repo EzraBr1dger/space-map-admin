@@ -808,6 +808,234 @@
     margin-top: 14px;
 }
 
+/*  EDIT MODAL — TABBED LAYOUT  */
+.ft-modal-wide {
+    min-width: 480px;
+    max-width: 600px;
+}
+
+.ft-modal-hdr {
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(0, 200, 255, 0.18);
+}
+
+.ft-modal-transit-warn {
+    margin-top: 6px;
+    color: #ff9800;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.ft-edit-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    padding-bottom: 0;
+}
+
+.ft-edit-tab {
+    padding: 6px 16px;
+    border: none;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    color: rgba(192, 207, 224, 0.45);
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+    margin-bottom: -1px;
+}
+
+.ft-edit-tab:hover:not(:disabled) { color: #c0cfe0; }
+.ft-edit-tab:disabled { opacity: 0.3; cursor: not-allowed; }
+.ft-tab-active {
+    color: #00c8ff;
+    border-bottom-color: #00c8ff;
+}
+
+/*  MANAGE ASSETS SHARED BLOCK  */
+.ft-asset-block {
+    background: rgba(4, 8, 20, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 4px;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+}
+
+.ft-asset-block-title {
+    color: rgba(192, 207, 224, 0.5);
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+}
+
+/*  VENATOR SECTION  */
+.ft-venator-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+
+.ft-venator-count {
+    font-size: 0.82rem;
+    color: #c0cfe0;
+}
+
+.ft-venator-count strong { color: #2196f3; }
+
+.ft-venator-incoming {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #2196f3;
+    letter-spacing: 0.5px;
+}
+
+.ft-venator-pool {
+    font-size: 0.72rem;
+    color: rgba(192, 207, 224, 0.4);
+    margin-left: auto;
+}
+
+.ft-venator-btns {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+
+.ft-btn-venator-add {
+    background: rgba(33, 150, 243, 0.15);
+    color: #2196f3;
+    border: 1px solid rgba(33, 150, 243, 0.35);
+    font-size: 0.68rem;
+}
+
+.ft-btn-venator-rem {
+    background: rgba(244, 67, 54, 0.1);
+    color: #f44336;
+    border: 1px solid rgba(244, 67, 54, 0.3);
+    font-size: 0.68rem;
+}
+
+.ft-btn-venator-add:disabled,
+.ft-btn-venator-rem:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.ft-inbound-venator {
+    font-size: 0.68rem;
+    color: rgba(33, 150, 243, 0.75);
+    margin-bottom: 6px;
+}
+
+.ft-inbound-bar-track {
+    height: 3px;
+    background: rgba(255, 255, 255, 0.07);
+    border-radius: 2px;
+    margin-top: 4px;
+    overflow: hidden;
+}
+
+.ft-inbound-bar-fill {
+    height: 100%;
+    background: #2196f3;
+    border-radius: 2px;
+    transition: width 0.5s ease;
+}
+
+.ft-frigate-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    flex-wrap: wrap;
+}
+
+.ft-frigate-input {
+    width: 80px !important;
+    margin-bottom: 0 !important;
+    padding: 5px 8px !important;
+    font-size: 0.76rem !important;
+}
+
+/*  BATTALION ASSIGN/REMOVE ROWS  */
+.ft-bat-manage-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    gap: 10px;
+}
+
+.ft-bat-manage-row:last-child { border-bottom: none; }
+
+.ft-bat-conflict-row { background: rgba(255, 152, 0, 0.04); border-radius: 3px; padding: 6px 6px; }
+
+.ft-bat-manage-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.ft-bat-manage-name {
+    color: #c0cfe0;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.ft-bat-conflict-tag {
+    color: #ff9800;
+    font-size: 0.63rem;
+    letter-spacing: 0.5px;
+}
+
+.ft-bat-empty {
+    color: rgba(192, 207, 224, 0.28);
+    font-size: 0.72rem;
+    padding: 4px 0;
+}
+
+.ft-bsm-assign {
+    background: rgba(76, 175, 80, 0.12);
+    color: #4caf50;
+    border: 1px solid rgba(76, 175, 80, 0.3);
+    flex-shrink: 0;
+}
+
+.ft-bsm-reassign {
+    background: rgba(255, 152, 0, 0.12);
+    color: #ff9800;
+    border: 1px solid rgba(255, 152, 0, 0.3);
+    flex-shrink: 0;
+}
+
+.ft-modal-pending-note {
+    background: rgba(240, 192, 64, 0.07);
+    border: 1px solid rgba(240, 192, 64, 0.2);
+    border-radius: 3px;
+    color: #f0c040;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 8px 12px;
+    margin-bottom: 12px;
+}
+
 /* LEGACY CLASS SUPPORT so nothing outside FleetTab breaks */
 .fleet-tab { margin-top: 0; }
 .loading { color: #64ffda; padding: 20px; }
