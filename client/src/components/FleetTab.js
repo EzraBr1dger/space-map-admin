@@ -45,6 +45,8 @@ function FleetTab() {
     const venatorTimersRef = useRef({});
     // 'info' | 'assets' — which tab is active in the edit modal
     const [editTab, setEditTab] = useState('info');
+    // quantity selected for venator add/remove actions in edit modal
+    const [venatorQty, setVenatorQty] = useState(1);
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState({ type: '', text: '' });
     const [editingFleet, setEditingFleet] = useState(null);
@@ -576,62 +578,75 @@ function FleetTab() {
         }
     };
 
-    // Queue a venator to arrive at a fleet after 14h (or 10s admin)
-    const addVenator = (fleetId, fleetName) => {
-        if (venatorStats.available <= 0) { showMessage('error', 'No venators available in pool'); return; }
+    // Queue one or more venators to arrive at a fleet after 14h (or 10s admin)
+    const addVenator = (fleetId, fleetName, qty = 1) => {
+        if (venatorStats.available < qty) {
+            showMessage('error', qty === 1
+                ? 'No venators available in pool'
+                : `Only ${venatorStats.available} venator${venatorStats.available !== 1 ? 's' : ''} available`);
+            return;
+        }
         const duration = getVenatorTravelDuration();
-        const startTime = Date.now();
-        setPendingVenators(prev => ({
-            ...prev,
-            [fleetId]: [...(prev[fleetId] || []), { startTime, duration }]
-        }));
         const label = instantMove ? '10s (admin)' : '14h';
-        showMessage('success', `Venator dispatched to ${fleetName} — arrives in ${label}`);
 
-        const timerId = setTimeout(async () => {
-            try {
-                const freshRes = await api.get('/fleet');
-                const freshFleet = freshRes.data.fleets[fleetId];
-                if (!freshFleet) return;
-                await api.put(`/fleet/${fleetId}`, {
-                    fleetName: freshFleet.fleetName,
-                    commander: freshFleet.commander || '',
-                    battalions: freshFleet.battalions ? Object.values(freshFleet.battalions) : [],
-                    composition: { ...freshFleet.composition, venators: (freshFleet.composition?.venators || 0) + 1 },
-                    description: freshFleet.description || ''
+        for (let i = 0; i < qty; i++) {
+            const startTime = Date.now() + i * 50; // slight offset so each entry is unique
+            setPendingVenators(prev => ({
+                ...prev,
+                [fleetId]: [...(prev[fleetId] || []), { startTime, duration }]
+            }));
+
+            const timerId = setTimeout(async () => {
+                try {
+                    const freshRes = await api.get('/fleet');
+                    const freshFleet = freshRes.data.fleets[fleetId];
+                    if (!freshFleet) return;
+                    await api.put(`/fleet/${fleetId}`, {
+                        fleetName: freshFleet.fleetName,
+                        commander: freshFleet.commander || '',
+                        battalions: freshFleet.battalions ? Object.values(freshFleet.battalions) : [],
+                        composition: { ...freshFleet.composition, venators: (freshFleet.composition?.venators || 0) + 1 },
+                        description: freshFleet.description || ''
+                    });
+                    showMessage('success', `Venator arrived at ${freshFleet.fleetName}`);
+                } catch (error) {
+                    showMessage('error', 'Venator arrival failed');
+                }
+                setPendingVenators(prev => {
+                    const arr = [...(prev[fleetId] || [])];
+                    const idx = arr.findIndex(v => v.startTime === startTime);
+                    if (idx !== -1) arr.splice(idx, 1);
+                    if (arr.length === 0) { const { [fleetId]: _, ...rest } = prev; return rest; }
+                    return { ...prev, [fleetId]: arr };
                 });
-                showMessage('success', `Venator arrived at ${freshFleet.fleetName}`);
-            } catch (error) {
-                showMessage('error', 'Venator arrival failed');
-            }
-            setPendingVenators(prev => {
-                const arr = [...(prev[fleetId] || [])];
-                const idx = arr.findIndex(v => v.startTime === startTime);
-                if (idx !== -1) arr.splice(idx, 1);
-                if (arr.length === 0) { const { [fleetId]: _, ...rest } = prev; return rest; }
-                return { ...prev, [fleetId]: arr };
-            });
-            if (venatorTimersRef.current[fleetId]) {
-                venatorTimersRef.current[fleetId] = venatorTimersRef.current[fleetId].filter(id => id !== timerId);
-            }
-            loadData();
-        }, duration);
+                if (venatorTimersRef.current[fleetId]) {
+                    venatorTimersRef.current[fleetId] = venatorTimersRef.current[fleetId].filter(id => id !== timerId);
+                }
+                loadData();
+            }, duration + i * 100); // stagger arrivals so backend writes don't race
 
-        if (!venatorTimersRef.current[fleetId]) venatorTimersRef.current[fleetId] = [];
-        venatorTimersRef.current[fleetId].push(timerId);
+            if (!venatorTimersRef.current[fleetId]) venatorTimersRef.current[fleetId] = [];
+            venatorTimersRef.current[fleetId].push(timerId);
+        }
 
-        // Optimistically update editingFleet so available count reflects the queued ship
+        showMessage('success', `${qty} venator${qty !== 1 ? 's' : ''} dispatched to ${fleetName} — arrives in ${label}`);
+        // Optimistically reflect queued ships so pool count updates immediately
         setEditingFleet(prev => prev ? {
             ...prev,
-            _queuedVenators: (prev._queuedVenators || 0) + 1
+            _queuedVenators: (prev._queuedVenators || 0) + qty
         } : prev);
     };
 
-    // Remove one venator immediately — instant API call
-    const removeVenator = async (fleetId) => {
+    // Remove one or more venators immediately — instant API call
+    const removeVenator = async (fleetId, qty = 1) => {
         const current = editingFleet?.composition?.venators || 0;
-        if (current <= 0) { showMessage('error', 'No venators to remove'); return; }
-        const newCount = current - 1;
+        if (current < qty) {
+            showMessage('error', current === 0
+                ? 'No venators to remove'
+                : `Only ${current} venator${current !== 1 ? 's' : ''} assigned`);
+            return;
+        }
+        const newCount = current - qty;
         setEditingFleet(prev => ({ ...prev, composition: { ...prev.composition, venators: newCount } }));
         try {
             const f = fleets[fleetId];
@@ -642,10 +657,10 @@ function FleetTab() {
                 composition: { ...f.composition, venators: newCount },
                 description: f.description || ''
             });
-            showMessage('success', 'Venator removed');
+            showMessage('success', `${qty} venator${qty !== 1 ? 's' : ''} removed`);
             loadData();
         } catch (err) {
-            showMessage('error', 'Failed to remove venator');
+            showMessage('error', 'Failed to remove venators');
         }
     };
 
@@ -960,6 +975,7 @@ function FleetTab() {
                                     <button
                                         onClick={() => {
                                             setEditTab('info');
+                                            setVenatorQty(1);
                                             setEditingFleet({
                                                 id, ...fleet,
                                                 battalions: fleet.battalions
@@ -1085,107 +1101,150 @@ function FleetTab() {
                             {/*  MANAGE ASSETS TAB  */}
                             {editTab === 'assets' && (
                                 <>
-                                    {/* VENATORS */}
-                                    <div className="ft-asset-block">
-                                        <div className="ft-asset-block-title">VENATORS</div>
-                                        <div className="ft-venator-row">
-                                            <span className="ft-venator-count">
-                                                Current: <strong>{editingFleet.composition?.venators || 0}</strong>
-                                            </span>
-                                            {inboundVenators.length > 0 && (
-                                                <span className="ft-venator-incoming">
-                                                    +{inboundVenators.length} inbound
-                                                </span>
-                                            )}
-                                            <span className="ft-venator-pool">
-                                                Pool: {venatorStats.available} available
-                                            </span>
-                                        </div>
-                                        <div className="ft-venator-btns">
-                                            <button
-                                                onClick={() => addVenator(editingFleet.id, editingFleet.fleetName)}
-                                                className="ft-btn ft-btn-venator-add"
-                                                disabled={venatorStats.available <= 0}
-                                                title={instantMove ? 'Arrives in 10s (admin)' : 'Arrives in 14h'}
-                                            >+ ADD VENATOR {instantMove ? '(10s)' : '(14h)'}</button>
-                                            <button
-                                                onClick={() => removeVenator(editingFleet.id)}
-                                                className="ft-btn ft-btn-venator-rem"
-                                                disabled={(editingFleet.composition?.venators || 0) <= 0}
-                                            >− REMOVE VENATOR</button>
-                                        </div>
-                                        {inboundVenators.map((v, i) => (
-                                            <div key={i} className="ft-inbound-venator">
-                                                <span>⟳ Venator inbound — {getAssignCountdown(v)}</span>
-                                                <div className="ft-inbound-bar-track">
-                                                    <div className="ft-inbound-bar-fill" style={{ width: `${getAssignProgress(v)}%` }} />
-                                                </div>
-                                            </div>
-                                        ))}
-                                        <div className="ft-frigate-row">
-                                            <span className="ft-venator-count">Frigates: <strong>{editingFleet.composition?.frigates || 0}</strong></span>
-                                            <input className="ft-input ft-frigate-input" type="number" min="0" placeholder="Frigates"
-                                                value={editingFleet.composition?.frigates || ''}
-                                                onChange={(e) => setEditingFleet({ ...editingFleet, composition: { ...editingFleet.composition, frigates: parseInt(e.target.value) || 0 } })} />
-                                            <button className="ft-btn ft-btn-venator-add" onClick={async () => {
-                                                const f = fleets[editingFleet.id];
-                                                await api.put(`/fleet/${editingFleet.id}`, {
-                                                    fleetName: f.fleetName, commander: f.commander || '',
-                                                    battalions: f.battalions ? Object.values(f.battalions) : [],
-                                                    composition: { ...f.composition, frigates: editingFleet.composition?.frigates || 0 },
-                                                    description: f.description || ''
-                                                });
-                                                showMessage('success', 'Frigates updated'); loadData();
-                                            }}>SAVE FRIGATES</button>
-                                        </div>
-                                    </div>
-
-                                    {/* ASSIGNED BATTALIONS */}
-                                    <div className="ft-asset-block">
-                                        <div className="ft-asset-block-title">ASSIGNED BATTALIONS</div>
-                                        {assignedBats.length === 0 ? (
-                                            <div className="ft-bat-empty">No battalions assigned</div>
-                                        ) : assignedBats.map(bat => (
-                                            <div key={bat} className="ft-bat-manage-row">
-                                                <span className="ft-bat-manage-name">{bat}</span>
-                                                <button
-                                                    onClick={() => removeBattalion(bat)}
-                                                    className="ft-btn-sm ft-bsm-del"
-                                                    disabled={hasPending}
-                                                    title={hasPending ? 'Assignment in progress' : ''}
-                                                >REMOVE</button>
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    {/* AVAILABLE BATTALIONS */}
-                                    <div className="ft-asset-block">
-                                        <div className="ft-asset-block-title">AVAILABLE BATTALIONS</div>
-                                        {availableBats.length === 0 ? (
-                                            <div className="ft-bat-empty">All battalions assigned</div>
-                                        ) : availableBats.map(({ bat, otherFleetId, otherFleetName }) => (
-                                            <div key={bat} className={`ft-bat-manage-row${otherFleetId ? ' ft-bat-conflict-row' : ''}`}>
-                                                <div className="ft-bat-manage-info">
-                                                    <span className="ft-bat-manage-name">{bat}</span>
-                                                    {otherFleetId && (
-                                                        <span className="ft-bat-conflict-tag">in {otherFleetName}</span>
-                                                    )}
-                                                </div>
-                                                <button
-                                                    onClick={() => assignBattalion(bat, otherFleetId, otherFleetName)}
-                                                    className={`ft-btn-sm ${otherFleetId ? 'ft-bsm-reassign' : 'ft-bsm-assign'}`}
-                                                    disabled={hasPending}
-                                                    title={hasPending ? 'Assignment in progress' : ''}
-                                                >{otherFleetId ? 'REASSIGN' : 'ASSIGN'}</button>
-                                            </div>
-                                        ))}
-                                    </div>
-
                                     {hasPending && (
                                         <div className="ft-modal-pending-note">
                                             ⟳ Battalion assignment in progress — {getAssignCountdown(pendingAssignments[editingFleet.id])} remaining
                                         </div>
                                     )}
+
+                                    <div className="ft-assets-grid">
+
+                                        {/*  LEFT COLUMN: Venators + Frigates  */}
+                                        <div className="ft-assets-left">
+
+                                            {/* VENATORS */}
+                                            <div className="ft-asset-block">
+                                                <div className="ft-asset-block-title">VENATORS</div>
+                                                <div className="ft-venator-stat-row">
+                                                    <span>Current: <strong>{editingFleet.composition?.venators || 0}</strong></span>
+                                                    {inboundVenators.length > 0 && (
+                                                        <span className="ft-venator-incoming">
+                                                            +{inboundVenators.length} inbound
+                                                        </span>
+                                                    )}
+                                                    <span className="ft-venator-pool">
+                                                        Pool: {venatorStats.available} avail.
+                                                    </span>
+                                                </div>
+
+                                                {/* Quantity stepper */}
+                                                <div className="ft-qty-row">
+                                                    <span className="ft-qty-label">QTY</span>
+                                                    <button className="ft-qty-btn"
+                                                        onClick={() => setVenatorQty(q => Math.max(1, q - 1))}>−</button>
+                                                    <input
+                                                        className="ft-input ft-qty-input"
+                                                        type="number"
+                                                        min="1"
+                                                        max={venatorStats.available}
+                                                        value={venatorQty}
+                                                        onChange={e => setVenatorQty(Math.max(1, parseInt(e.target.value) || 1))}
+                                                    />
+                                                    <button className="ft-qty-btn"
+                                                        onClick={() => setVenatorQty(q => Math.min(Math.max(venatorStats.available, 1), q + 1))}>+</button>
+                                                </div>
+
+                                                <div className="ft-venator-btns">
+                                                    <button
+                                                        onClick={() => addVenator(editingFleet.id, editingFleet.fleetName, venatorQty)}
+                                                        className="ft-btn ft-btn-venator-add"
+                                                        disabled={venatorStats.available <= 0 || venatorQty < 1}
+                                                        title={instantMove ? `Add ${venatorQty} — arrives in 10s (admin)` : `Add ${venatorQty} — arrives in 14h each`}
+                                                    >+ ADD {venatorQty} VENATOR{venatorQty !== 1 ? 'S' : ''} {instantMove ? '(10s)' : '(14h)'}</button>
+                                                    <button
+                                                        onClick={() => removeVenator(editingFleet.id, venatorQty)}
+                                                        className="ft-btn ft-btn-venator-rem"
+                                                        disabled={(editingFleet.composition?.venators || 0) < venatorQty}
+                                                    >− REMOVE {venatorQty} VENATOR{venatorQty !== 1 ? 'S' : ''}</button>
+                                                </div>
+
+                                                {inboundVenators.map((v, i) => (
+                                                    <div key={i} className="ft-inbound-venator">
+                                                        <span>⟳ Venator inbound — {getAssignCountdown(v)}</span>
+                                                        <div className="ft-inbound-bar-track">
+                                                            <div className="ft-inbound-bar-fill" style={{ width: `${getAssignProgress(v)}%` }} />
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            {/* FRIGATES */}
+                                            <div className="ft-asset-block">
+                                                <div className="ft-asset-block-title">FRIGATES</div>
+                                                <div className="ft-frigate-row">
+                                                    <span className="ft-venator-count">
+                                                        Current: <strong>{editingFleet.composition?.frigates || 0}</strong>
+                                                    </span>
+                                                    <input className="ft-input ft-frigate-input" type="number" min="0" placeholder="Set"
+                                                        value={editingFleet.composition?.frigates || ''}
+                                                        onChange={(e) => setEditingFleet({ ...editingFleet, composition: { ...editingFleet.composition, frigates: parseInt(e.target.value) || 0 } })} />
+                                                    <button className="ft-btn ft-btn-venator-add" onClick={async () => {
+                                                        const f = fleets[editingFleet.id];
+                                                        await api.put(`/fleet/${editingFleet.id}`, {
+                                                            fleetName: f.fleetName, commander: f.commander || '',
+                                                            battalions: f.battalions ? Object.values(f.battalions) : [],
+                                                            composition: { ...f.composition, frigates: editingFleet.composition?.frigates || 0 },
+                                                            description: f.description || ''
+                                                        });
+                                                        showMessage('success', 'Frigates updated'); loadData();
+                                                    }}>SAVE</button>
+                                                </div>
+                                            </div>
+
+                                        </div>{/* end ft-assets-left */}
+
+                                        {/*  RIGHT COLUMN: Battalions  */}
+                                        <div className="ft-assets-right">
+
+                                            {/* ASSIGNED BATTALIONS */}
+                                            <div className="ft-asset-block ft-asset-block-scroll">
+                                                <div className="ft-asset-block-title">
+                                                    ASSIGNED BATTALIONS{assignedBats.length > 0 ? ` (${assignedBats.length})` : ''}
+                                                </div>
+                                                <div className="ft-bat-scroll">
+                                                    {assignedBats.length === 0 ? (
+                                                        <div className="ft-bat-empty">No battalions assigned</div>
+                                                    ) : assignedBats.map(bat => (
+                                                        <div key={bat} className="ft-bat-manage-row">
+                                                            <span className="ft-bat-manage-name">{bat}</span>
+                                                            <button
+                                                                onClick={() => removeBattalion(bat)}
+                                                                className="ft-btn-sm ft-bsm-del"
+                                                                disabled={hasPending}
+                                                                title={hasPending ? 'Assignment in progress' : ''}
+                                                            >REMOVE</button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* AVAILABLE BATTALIONS */}
+                                            <div className="ft-asset-block ft-asset-block-scroll">
+                                                <div className="ft-asset-block-title">AVAILABLE BATTALIONS</div>
+                                                <div className="ft-bat-scroll">
+                                                    {availableBats.length === 0 ? (
+                                                        <div className="ft-bat-empty">All battalions assigned</div>
+                                                    ) : availableBats.map(({ bat, otherFleetId, otherFleetName }) => (
+                                                        <div key={bat} className={`ft-bat-manage-row${otherFleetId ? ' ft-bat-conflict-row' : ''}`}>
+                                                            <div className="ft-bat-manage-info">
+                                                                <span className="ft-bat-manage-name">
+                                                                    {bat}{otherFleetId ? ` (in ${otherFleetName})` : ''}
+                                                                </span>
+                                                            </div>
+                                                            <button
+                                                                onClick={() => assignBattalion(bat, otherFleetId, otherFleetName)}
+                                                                className={`ft-btn-sm ${otherFleetId ? 'ft-bsm-reassign' : 'ft-bsm-assign'}`}
+                                                                disabled={hasPending}
+                                                                title={hasPending ? 'Assignment in progress' : ''}
+                                                            >{otherFleetId ? 'REASSIGN' : 'ASSIGN'}</button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                        </div>{/* end ft-assets-right */}
+
+                                    </div>{/* end ft-assets-grid */}
 
                                     <div className="ft-modal-actions">
                                         <button onClick={() => setEditingFleet(null)} className="ft-btn ft-btn-cancel">CLOSE</button>
