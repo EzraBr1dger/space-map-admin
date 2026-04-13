@@ -808,7 +808,7 @@
     margin-top: 14px;
 }
 
-/* ── EDIT MODAL — TABBED LAYOUT ── */
+/*  EDIT MODAL — TABBED LAYOUT  */
 .ft-modal-wide {
     min-width: 860px;
     max-width: 1300px;
@@ -957,7 +957,7 @@
     border-bottom-color: #00c8ff;
 }
 
-/* ── MANAGE ASSETS — SHARED BLOCK ── */
+/*  MANAGE ASSETS — SHARED BLOCK  */
 .ft-asset-block {
     background: rgba(4, 8, 20, 0.6);
     border: 1px solid rgba(255, 255, 255, 0.06);
@@ -975,7 +975,7 @@
     margin-bottom: 10px;
 }
 
-/* ── VENATOR SECTION ── */
+/*  VENATOR SECTION  */
 .ft-venator-row {
     display: flex;
     align-items: center;
@@ -1069,7 +1069,7 @@
     font-size: 0.76rem !important;
 }
 
-/* ── BATTALION ASSIGN/REMOVE ROWS ── */
+/*  BATTALION ASSIGN/REMOVE ROWS  */
 .ft-bat-manage-row {
     display: flex;
     align-items: center;
@@ -1124,6 +1124,40 @@
     border: 1px solid rgba(255, 152, 0, 0.3);
     flex-shrink: 0;
 }
+
+/* Battalion button that fills the full row width with name embedded */
+.ft-btn-bat-full {
+    width: 100%;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* DEV fast-forward button — subtle, secondary appearance */
+.ft-asset-block-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.ft-btn-dev-ff {
+    background: rgba(255, 152, 0, 0.07);
+    color: rgba(255, 152, 0, 0.55);
+    border: 1px solid rgba(255, 152, 0, 0.18);
+    border-radius: 2px;
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 2px 7px;
+    cursor: pointer;
+    font-family: 'Courier New', Courier, monospace;
+    text-transform: uppercase;
+    transition: opacity 0.15s;
+    flex-shrink: 0;
+}
+
+.ft-btn-dev-ff:hover { opacity: 0.65; }
 
 .ft-modal-pending-note {
     background: rgba(240, 192, 64, 0.07);
