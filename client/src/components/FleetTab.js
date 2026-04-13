@@ -38,8 +38,13 @@ function FleetTab() {
     const [instantProgress, setInstantProgress] = useState(null);
     // { [fleetId]: { startTime, duration, payload, fleetName } }
     const [pendingAssignments, setPendingAssignments] = useState({});
+    // { [fleetId]: [{ startTime, duration }] } — multiple venators can be inbound per fleet
+    const [pendingVenators, setPendingVenators] = useState({});
     // Stores setTimeout IDs so they can be cleared on unmount
     const assignmentTimersRef = useRef({});
+    const venatorTimersRef = useRef({});
+    // 'info' | 'assets' — which tab is active in the edit modal
+    const [editTab, setEditTab] = useState('info');
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState({ type: '', text: '' });
     const [editingFleet, setEditingFleet] = useState(null);
@@ -58,7 +63,7 @@ function FleetTab() {
 
     //  NEW STATE
     const [planetDetails, setPlanetDetails] = useState({});
-    // Ticks every second : used only to re-render progress bars from real timestamps.
+    // Ticks every second and is used only to re-render progress bars from real timestamps.
     // No API call is made here; all math uses departureDate/arrivalDate from backend.
     const [now, setNow] = useState(Date.now());
 
@@ -74,10 +79,14 @@ function FleetTab() {
         return () => clearInterval(poll);
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Clear any pending assignment timers when the component unmounts
+    // Clear all pending timers when the component unmounts
     useEffect(() => {
-        const timers = assignmentTimersRef.current;
-        return () => Object.values(timers).forEach(clearTimeout);
+        const aTimers = assignmentTimersRef.current;
+        const vTimers = venatorTimersRef.current;
+        return () => {
+            Object.values(aTimers).forEach(clearTimeout);
+            Object.values(vTimers).flat().forEach(clearTimeout);
+        };
     }, []);
 
     const getSortedFleets = () => {
@@ -211,6 +220,7 @@ function FleetTab() {
         }
     };
 
+    // eslint-disable-next-line no-unused-vars
     const updateFleet = async () => {
         console.log('DESCRIPTION BEING SENT:', editingFleet.description);
         const venatorDifference = editingFleet.composition.venators - (fleets[editingFleet.id]?.composition?.venators || 0);
@@ -268,7 +278,7 @@ function FleetTab() {
             return;
         }
 
-        // Instant save - no battalion change, or fleet was previously unassigned
+        // Instant save — no battalion change, or fleet was previously unassigned
         try {
             await api.put(`/fleet/${fleetId}`, payload);
             showMessage('success', 'Fleet updated successfully');
@@ -434,6 +444,211 @@ function FleetTab() {
         return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
     };
 
+    // 14h normally; 10s with admin bypass — for venator inbound travel
+    const getVenatorTravelDuration = () => instantMove ? 10000 : 14 * 60 * 60 * 1000;
+
+    // Save only name/commander/description — does NOT touch battalions or composition
+    const saveFleetInfo = async () => {
+        const fleetId = editingFleet.id;
+        const currentFleet = fleets[fleetId];
+        try {
+            await api.put(`/fleet/${fleetId}`, {
+                fleetName: editingFleet.fleetName,
+                commander: editingFleet.commander || '',
+                battalions: currentFleet?.battalions ? Object.values(currentFleet.battalions) : [],
+                composition: currentFleet?.composition || editingFleet.composition,
+                description: editingFleet.description || ''
+            });
+            showMessage('success', 'Fleet info saved');
+            await loadData();
+        } catch (error) {
+            showMessage('error', error.response?.data?.error || 'Failed to save fleet info');
+        }
+    };
+
+    // Which fleet currently has this battalion (excluding the fleet being edited)
+    const getBattalionFleet = (battalion) => {
+        for (const [fId, f] of Object.entries(fleets)) {
+            if (fId === editingFleet?.id) continue;
+            const bats = f.battalions ? Object.values(f.battalions) : (f.battalion ? [f.battalion] : []);
+            if (bats.includes(battalion)) return [fId, f.fleetName || fId];
+        }
+        return null;
+    };
+
+    // Battalions not already in the current fleet, with conflict info
+    const getAvailableBattalions = () => {
+        if (!editingFleet) return [];
+        const current = editingFleet.battalions || [];
+        return BATTALIONS
+            .filter(b => b !== 'Unassigned' && !current.includes(b))
+            .map(bat => {
+                const conflict = getBattalionFleet(bat);
+                return { bat, otherFleetId: conflict?.[0] || null, otherFleetName: conflict?.[1] || null };
+            });
+    };
+
+    // Assign a battalion to the current fleet (with exclusivity enforcement + delay)
+    const assignBattalion = async (battalion, otherFleetId, otherFleetName) => {
+        // Step 1: remove from other fleet immediately if needed
+        if (otherFleetId) {
+            const other = fleets[otherFleetId];
+            const otherBats = other?.battalions
+                ? Object.values(other.battalions).filter(b => b !== battalion)
+                : [];
+            try {
+                await api.put(`/fleet/${otherFleetId}`, {
+                    fleetName: other.fleetName,
+                    commander: other.commander || '',
+                    battalions: otherBats,
+                    composition: other.composition || { venators: 0, frigates: 0 },
+                    description: other.description || ''
+                });
+            } catch (err) {
+                showMessage('error', `Failed to remove ${battalion} from ${otherFleetName}`);
+                return;
+            }
+        }
+
+        const newBats = [...(editingFleet.battalions || []).filter(b => b !== battalion), battalion];
+        setEditingFleet(prev => ({ ...prev, battalions: newBats }));
+
+        const fleetId = editingFleet.id;
+        const fleetName = editingFleet.fleetName;
+        const payload = {
+            fleetName,
+            commander: editingFleet.commander || '',
+            battalions: newBats,
+            composition: editingFleet.composition || { venators: 0, frigates: 0 },
+            description: editingFleet.description || ''
+        };
+
+        // Instant if fleet currently has no real battalions
+        if (isCurrentlyUnassigned(fleets[fleetId])) {
+            try {
+                await api.put(`/fleet/${fleetId}`, payload);
+                showMessage('success', `${battalion} assigned to ${fleetName}`);
+                loadData();
+            } catch (err) {
+                showMessage('error', 'Assignment failed');
+            }
+            return;
+        }
+
+        // Delayed assignment — cancel any existing pending timer first
+        if (assignmentTimersRef.current[fleetId]) clearTimeout(assignmentTimersRef.current[fleetId]);
+        const duration = getBattalionAssignDuration();
+        const label = instantMove ? '10s (admin)' : '20 min';
+        const suffix = otherFleetId ? ` (reassigned from ${otherFleetName})` : '';
+        setPendingAssignments(prev => ({ ...prev, [fleetId]: { startTime: Date.now(), duration, payload, fleetName } }));
+        showMessage('success', `${battalion} queued for ${fleetName} — ${label}${suffix}`);
+
+        assignmentTimersRef.current[fleetId] = setTimeout(async () => {
+            delete assignmentTimersRef.current[fleetId];
+            try {
+                await api.put(`/fleet/${fleetId}`, payload);
+                showMessage('success', `${battalion} fully assigned to ${fleetName}`);
+            } catch (error) {
+                showMessage('error', error.response?.data?.error || 'Battalion assignment failed');
+            }
+            setPendingAssignments(prev => { const n = { ...prev }; delete n[fleetId]; return n; });
+            loadData();
+        }, duration);
+    };
+
+    // Remove a battalion from the current fleet — instant, no delay
+    const removeBattalion = async (battalion) => {
+        const newBats = (editingFleet.battalions || []).filter(b => b !== battalion);
+        setEditingFleet(prev => ({ ...prev, battalions: newBats }));
+        const fleetId = editingFleet.id;
+        try {
+            await api.put(`/fleet/${fleetId}`, {
+                fleetName: editingFleet.fleetName,
+                commander: editingFleet.commander || '',
+                battalions: newBats,
+                composition: editingFleet.composition || { venators: 0, frigates: 0 },
+                description: editingFleet.description || ''
+            });
+            showMessage('success', `${battalion} removed`);
+            loadData();
+        } catch (err) {
+            showMessage('error', 'Failed to remove battalion');
+        }
+    };
+
+    // Queue a venator to arrive at a fleet after 14h (or 10s admin)
+    const addVenator = (fleetId, fleetName) => {
+        if (venatorStats.available <= 0) { showMessage('error', 'No venators available in pool'); return; }
+        const duration = getVenatorTravelDuration();
+        const startTime = Date.now();
+        setPendingVenators(prev => ({
+            ...prev,
+            [fleetId]: [...(prev[fleetId] || []), { startTime, duration }]
+        }));
+        const label = instantMove ? '10s (admin)' : '14h';
+        showMessage('success', `Venator dispatched to ${fleetName} — arrives in ${label}`);
+
+        const timerId = setTimeout(async () => {
+            try {
+                const freshRes = await api.get('/fleet');
+                const freshFleet = freshRes.data.fleets[fleetId];
+                if (!freshFleet) return;
+                await api.put(`/fleet/${fleetId}`, {
+                    fleetName: freshFleet.fleetName,
+                    commander: freshFleet.commander || '',
+                    battalions: freshFleet.battalions ? Object.values(freshFleet.battalions) : [],
+                    composition: { ...freshFleet.composition, venators: (freshFleet.composition?.venators || 0) + 1 },
+                    description: freshFleet.description || ''
+                });
+                showMessage('success', `Venator arrived at ${freshFleet.fleetName}`);
+            } catch (error) {
+                showMessage('error', 'Venator arrival failed');
+            }
+            setPendingVenators(prev => {
+                const arr = [...(prev[fleetId] || [])];
+                const idx = arr.findIndex(v => v.startTime === startTime);
+                if (idx !== -1) arr.splice(idx, 1);
+                if (arr.length === 0) { const { [fleetId]: _, ...rest } = prev; return rest; }
+                return { ...prev, [fleetId]: arr };
+            });
+            if (venatorTimersRef.current[fleetId]) {
+                venatorTimersRef.current[fleetId] = venatorTimersRef.current[fleetId].filter(id => id !== timerId);
+            }
+            loadData();
+        }, duration);
+
+        if (!venatorTimersRef.current[fleetId]) venatorTimersRef.current[fleetId] = [];
+        venatorTimersRef.current[fleetId].push(timerId);
+
+        // Optimistically update editingFleet so available count reflects the queued ship
+        setEditingFleet(prev => prev ? {
+            ...prev,
+            _queuedVenators: (prev._queuedVenators || 0) + 1
+        } : prev);
+    };
+
+    // Remove one venator immediately — instant API call
+    const removeVenator = async (fleetId) => {
+        const current = editingFleet?.composition?.venators || 0;
+        if (current <= 0) { showMessage('error', 'No venators to remove'); return; }
+        const newCount = current - 1;
+        setEditingFleet(prev => ({ ...prev, composition: { ...prev.composition, venators: newCount } }));
+        try {
+            const f = fleets[fleetId];
+            await api.put(`/fleet/${fleetId}`, {
+                fleetName: f.fleetName,
+                commander: f.commander || '',
+                battalions: f.battalions ? Object.values(f.battalions) : [],
+                composition: { ...f.composition, venators: newCount },
+                description: f.description || ''
+            });
+            showMessage('success', 'Venator removed');
+            loadData();
+        } catch (err) {
+            showMessage('error', 'Failed to remove venator');
+        }
+    };
+
     if (loading) return <div className="ft-loading">LOADING FLEET DATA...</div>;
 
     return (
@@ -570,6 +785,34 @@ function FleetTab() {
                             </div>
                         );
                     })}
+                </div>
+            )}
+
+            {/*  INCOMING VENATORS  */}
+            {Object.keys(pendingVenators).length > 0 && (
+                <div className="ft-routes-section">
+                    <div className="ft-section-header">
+                        <span className="ft-hdr-diamond">✦</span> INCOMING VENATORS
+                    </div>
+                    {Object.entries(pendingVenators).map(([fleetId, venators]) =>
+                        venators.map((v, i) => {
+                            const pct = getAssignProgress(v);
+                            const countdown = getAssignCountdown(v);
+                            return (
+                                <div key={`${fleetId}-${i}`} className="ft-route-entry">
+                                    <div className="ft-route-top">
+                                        <span className="ft-route-name">{fleets[fleetId]?.fleetName || fleetId}</span>
+                                        <span className="ft-route-path">+1 Venator inbound</span>
+                                        <span className="ft-route-pct" style={{ color: '#2196f3' }}>{pct}%</span>
+                                        <span className="ft-assign-countdown">{countdown} remaining</span>
+                                    </div>
+                                    <div className="ft-prog-wrap">
+                                        <div className="ft-prog-bar" style={{ width: `${pct}%`, background: '#2196f3' }} />
+                                    </div>
+                                </div>
+                            );
+                        })
+                    )}
                 </div>
             )}
 
@@ -715,12 +958,15 @@ function FleetTab() {
                                         >MOVE</button>
                                     )}
                                     <button
-                                        onClick={() => setEditingFleet({
-                                            id, ...fleet,
-                                            battalions: fleet.battalions
-                                                ? Object.values(fleet.battalions)
-                                                : (fleet.battalion ? [fleet.battalion] : [])
-                                        })}
+                                        onClick={() => {
+                                            setEditTab('info');
+                                            setEditingFleet({
+                                                id, ...fleet,
+                                                battalions: fleet.battalions
+                                                    ? Object.values(fleet.battalions)
+                                                    : (fleet.battalion ? [fleet.battalion] : [])
+                                            });
+                                        }}
                                         className="ft-btn-sm ft-bsm-edit"
                                         disabled={!!pendingAssignments[id]}
                                         title={pendingAssignments[id] ? 'Assignment in progress' : ''}
@@ -785,53 +1031,171 @@ function FleetTab() {
             )}
 
             {/*  EDIT FLEET MODAL  */}
-            {editingFleet && (
-                <div className="ft-modal">
-                    <div className="ft-modal-content">
-                        <div className="ft-modal-title">◈ EDIT FLEET</div>
-                        <input className="ft-input" type="text" placeholder="Fleet Name"
-                            value={editingFleet.fleetName}
-                            onChange={(e) => setEditingFleet({ ...editingFleet, fleetName: e.target.value })} />
-                        <input className="ft-input" type="text" placeholder="Commander"
-                            value={editingFleet.commander || ''}
-                            onChange={(e) => setEditingFleet({ ...editingFleet, commander: e.target.value })} />
-                        <div className="ft-bat-section">
-                            <div className="ft-bat-label">BATTALIONS</div>
-                            <div className="ft-bat-grid">
-                                {BATTALIONS.map(b => (
-                                    <label key={b} className="ft-bat-item">
-                                        <input type="checkbox"
-                                            checked={(Array.isArray(editingFleet.battalions)
-                                                ? editingFleet.battalions
-                                                : Object.values(editingFleet.battalions || {})).includes(b)}
-                                            onChange={(e) => {
-                                                const current = Array.isArray(editingFleet.battalions)
-                                                    ? editingFleet.battalions
-                                                    : Object.values(editingFleet.battalions || {});
-                                                const updated = e.target.checked ? [...current, b] : current.filter(x => x !== b);
-                                                setEditingFleet({ ...editingFleet, battalions: updated });
-                                            }} />
-                                        {b}
-                                    </label>
-                                ))}
+            {editingFleet && (() => {
+                const isInTransit = !!fleets[editingFleet.id]?.travelingTo;
+                const hasPending = !!pendingAssignments[editingFleet.id];
+                const inboundVenators = pendingVenators[editingFleet.id] || [];
+                const assignedBats = (editingFleet.battalions || []).filter(b => b && b !== 'Unassigned');
+                const availableBats = getAvailableBattalions();
+                return (
+                    <div className="ft-modal">
+                        <div className="ft-modal-content ft-modal-wide">
+
+                            {/* Header */}
+                            <div className="ft-modal-hdr">
+                                <div className="ft-modal-title">◈ {editingFleet.fleetName || 'EDIT FLEET'}</div>
+                                {isInTransit && (
+                                    <div className="ft-modal-transit-warn">⚠ IN TRANSIT — asset changes disabled</div>
+                                )}
                             </div>
-                        </div>
-                        <input className="ft-input" type="number" min="0" placeholder="Venators"
-                            value={editingFleet.composition?.venators || ''}
-                            onChange={(e) => setEditingFleet({ ...editingFleet, composition: { ...editingFleet.composition, venators: parseInt(e.target.value) || 0 } })} />
-                        <input className="ft-input" type="number" min="0" placeholder="Frigates"
-                            value={editingFleet.composition?.frigates || ''}
-                            onChange={(e) => setEditingFleet({ ...editingFleet, composition: { ...editingFleet.composition, frigates: parseInt(e.target.value) || 0 } })} />
-                        <textarea className="ft-textarea" placeholder="Fleet description (optional)" rows={3}
-                            value={editingFleet.description || ''}
-                            onChange={(e) => setEditingFleet({ ...editingFleet, description: e.target.value })} />
-                        <div className="ft-modal-actions">
-                            <button onClick={updateFleet} className="ft-btn ft-btn-save">SAVE CHANGES</button>
-                            <button onClick={() => setEditingFleet(null)} className="ft-btn ft-btn-cancel">CANCEL</button>
+
+                            {/* Tabs */}
+                            <div className="ft-edit-tabs">
+                                <button
+                                    className={`ft-edit-tab${editTab === 'info' ? ' ft-tab-active' : ''}`}
+                                    onClick={() => setEditTab('info')}
+                                >FLEET INFO</button>
+                                <button
+                                    className={`ft-edit-tab${editTab === 'assets' ? ' ft-tab-active' : ''}`}
+                                    onClick={() => setEditTab('assets')}
+                                    disabled={isInTransit}
+                                    title={isInTransit ? 'Cannot modify assets while in transit' : ''}
+                                >MANAGE ASSETS</button>
+                            </div>
+
+                            {/*  FLEET INFO TAB  */}
+                            {editTab === 'info' && (
+                                <>
+                                    <input className="ft-input" type="text" placeholder="Fleet Name"
+                                        value={editingFleet.fleetName}
+                                        onChange={(e) => setEditingFleet({ ...editingFleet, fleetName: e.target.value })} />
+                                    <input className="ft-input" type="text" placeholder="Commander"
+                                        value={editingFleet.commander || ''}
+                                        onChange={(e) => setEditingFleet({ ...editingFleet, commander: e.target.value })} />
+                                    <textarea className="ft-textarea" placeholder="Fleet description (optional)" rows={3}
+                                        value={editingFleet.description || ''}
+                                        onChange={(e) => setEditingFleet({ ...editingFleet, description: e.target.value })} />
+                                    <div className="ft-modal-actions">
+                                        <button onClick={saveFleetInfo} className="ft-btn ft-btn-save">SAVE INFO</button>
+                                        <button onClick={() => setEditingFleet(null)} className="ft-btn ft-btn-cancel">CLOSE</button>
+                                    </div>
+                                </>
+                            )}
+
+                            {/*  MANAGE ASSETS TAB  */}
+                            {editTab === 'assets' && (
+                                <>
+                                    {/* VENATORS */}
+                                    <div className="ft-asset-block">
+                                        <div className="ft-asset-block-title">VENATORS</div>
+                                        <div className="ft-venator-row">
+                                            <span className="ft-venator-count">
+                                                Current: <strong>{editingFleet.composition?.venators || 0}</strong>
+                                            </span>
+                                            {inboundVenators.length > 0 && (
+                                                <span className="ft-venator-incoming">
+                                                    +{inboundVenators.length} inbound
+                                                </span>
+                                            )}
+                                            <span className="ft-venator-pool">
+                                                Pool: {venatorStats.available} available
+                                            </span>
+                                        </div>
+                                        <div className="ft-venator-btns">
+                                            <button
+                                                onClick={() => addVenator(editingFleet.id, editingFleet.fleetName)}
+                                                className="ft-btn ft-btn-venator-add"
+                                                disabled={venatorStats.available <= 0}
+                                                title={instantMove ? 'Arrives in 10s (admin)' : 'Arrives in 14h'}
+                                            >+ ADD VENATOR {instantMove ? '(10s)' : '(14h)'}</button>
+                                            <button
+                                                onClick={() => removeVenator(editingFleet.id)}
+                                                className="ft-btn ft-btn-venator-rem"
+                                                disabled={(editingFleet.composition?.venators || 0) <= 0}
+                                            >− REMOVE VENATOR</button>
+                                        </div>
+                                        {inboundVenators.map((v, i) => (
+                                            <div key={i} className="ft-inbound-venator">
+                                                <span>⟳ Venator inbound — {getAssignCountdown(v)}</span>
+                                                <div className="ft-inbound-bar-track">
+                                                    <div className="ft-inbound-bar-fill" style={{ width: `${getAssignProgress(v)}%` }} />
+                                                </div>
+                                            </div>
+                                        ))}
+                                        <div className="ft-frigate-row">
+                                            <span className="ft-venator-count">Frigates: <strong>{editingFleet.composition?.frigates || 0}</strong></span>
+                                            <input className="ft-input ft-frigate-input" type="number" min="0" placeholder="Frigates"
+                                                value={editingFleet.composition?.frigates || ''}
+                                                onChange={(e) => setEditingFleet({ ...editingFleet, composition: { ...editingFleet.composition, frigates: parseInt(e.target.value) || 0 } })} />
+                                            <button className="ft-btn ft-btn-venator-add" onClick={async () => {
+                                                const f = fleets[editingFleet.id];
+                                                await api.put(`/fleet/${editingFleet.id}`, {
+                                                    fleetName: f.fleetName, commander: f.commander || '',
+                                                    battalions: f.battalions ? Object.values(f.battalions) : [],
+                                                    composition: { ...f.composition, frigates: editingFleet.composition?.frigates || 0 },
+                                                    description: f.description || ''
+                                                });
+                                                showMessage('success', 'Frigates updated'); loadData();
+                                            }}>SAVE FRIGATES</button>
+                                        </div>
+                                    </div>
+
+                                    {/* ASSIGNED BATTALIONS */}
+                                    <div className="ft-asset-block">
+                                        <div className="ft-asset-block-title">ASSIGNED BATTALIONS</div>
+                                        {assignedBats.length === 0 ? (
+                                            <div className="ft-bat-empty">No battalions assigned</div>
+                                        ) : assignedBats.map(bat => (
+                                            <div key={bat} className="ft-bat-manage-row">
+                                                <span className="ft-bat-manage-name">{bat}</span>
+                                                <button
+                                                    onClick={() => removeBattalion(bat)}
+                                                    className="ft-btn-sm ft-bsm-del"
+                                                    disabled={hasPending}
+                                                    title={hasPending ? 'Assignment in progress' : ''}
+                                                >REMOVE</button>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* AVAILABLE BATTALIONS */}
+                                    <div className="ft-asset-block">
+                                        <div className="ft-asset-block-title">AVAILABLE BATTALIONS</div>
+                                        {availableBats.length === 0 ? (
+                                            <div className="ft-bat-empty">All battalions assigned</div>
+                                        ) : availableBats.map(({ bat, otherFleetId, otherFleetName }) => (
+                                            <div key={bat} className={`ft-bat-manage-row${otherFleetId ? ' ft-bat-conflict-row' : ''}`}>
+                                                <div className="ft-bat-manage-info">
+                                                    <span className="ft-bat-manage-name">{bat}</span>
+                                                    {otherFleetId && (
+                                                        <span className="ft-bat-conflict-tag">in {otherFleetName}</span>
+                                                    )}
+                                                </div>
+                                                <button
+                                                    onClick={() => assignBattalion(bat, otherFleetId, otherFleetName)}
+                                                    className={`ft-btn-sm ${otherFleetId ? 'ft-bsm-reassign' : 'ft-bsm-assign'}`}
+                                                    disabled={hasPending}
+                                                    title={hasPending ? 'Assignment in progress' : ''}
+                                                >{otherFleetId ? 'REASSIGN' : 'ASSIGN'}</button>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {hasPending && (
+                                        <div className="ft-modal-pending-note">
+                                            ⟳ Battalion assignment in progress — {getAssignCountdown(pendingAssignments[editingFleet.id])} remaining
+                                        </div>
+                                    )}
+
+                                    <div className="ft-modal-actions">
+                                        <button onClick={() => setEditingFleet(null)} className="ft-btn ft-btn-cancel">CLOSE</button>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
-                </div>
-            )}
+                );
+            })()}
 
         </div>
     );
