@@ -1,31 +1,42 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
-import './CISFleetTab.css';
-import { useAuth } from '../context/AuthContext';
+import './FleetTab.css';
 
-const CIS_GROUPS = [
-    'Grievous Fleet', 'Dooku Command', 'Muun Banking Clan',
-    'Trade Federation', 'Techno Union', 'Unassigned'
-];
+const CIS_GROUPS = ['Grievous Fleet', 'Dooku Command', 'Muun Banking Clan', 'Trade Federation', 'Techno Union', 'Unassigned'];
+
+const PLANET_DISTANCES = {
+    'Coruscant-Kamino': 2,
+    'Coruscant-Naboo': 1,
+    'Coruscant-Alderaan': 1,
+    'Coruscant-Kashyyyk': 3,
+    'Coruscant-Onderon': 4,
+    'Coruscant-Geonosis': 5,
+    'Coruscant-Ryloth': 6,
+    'Coruscant-Tatooine': 7,
+    'Coruscant-Mustafar': 7,
+};
+
+const calculateTravelDays = (from, to) => {
+    if (from === to) return 0;
+    const key1 = `${from}-${to}`;
+    const key2 = `${to}-${from}`;
+    return PLANET_DISTANCES[key1] || PLANET_DISTANCES[key2] || 5;
+};
 
 function CISFleetTab() {
-    const { user } = useAuth();
-
     const [fleets, setFleets] = useState({});
     const [planets, setPlanets] = useState([]);
     const [selectedFleets, setSelectedFleets] = useState([]);
     const [destination, setDestination] = useState('');
     const [travelDays, setTravelDays] = useState(3);
-    const [instantMove, setInstantMove] = useState(false);
-    const [instantProgress, setInstantProgress] = useState(null);
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState({ type: '', text: '' });
     const [editingFleet, setEditingFleet] = useState(null);
     const [showAddModal, setShowAddModal] = useState(false);
     const [sortBy, setSortBy] = useState('default');
     const [sortValue, setSortValue] = useState('');
+    const [instantMove, setInstantMove] = useState(false);
     const [planetAccess, setPlanetAccess] = useState({});
-    const [now, setNow] = useState(Date.now());
 
     const [newFleet, setNewFleet] = useState({
         fleetName: '',
@@ -33,14 +44,23 @@ function CISFleetTab() {
         group: 'Unassigned',
         startingPlanet: 'Geonosis',
         description: '',
-        composition: { lucrehulks: 0, munificents: 0, providences: 0 }
+        composition: { dreadnoughts: 0, munificents: 0, providences: 0 }
     });
 
-    // 1-second clock keeps transit progress bars live
-    useEffect(() => {
-        const clock = setInterval(() => setNow(Date.now()), 1000);
-        return () => clearInterval(clock);
-    }, []);
+    const getSortedFleets = () => {
+        const entries = Object.entries(fleets);
+        if (sortBy === 'group' && sortValue) {
+            const matched = entries.filter(([_, f]) => f.group === sortValue);
+            const unmatched = entries.filter(([_, f]) => f.group !== sortValue);
+            return [...matched, ...unmatched];
+        }
+        if (sortBy === 'planet' && sortValue) {
+            const matched = entries.filter(([_, f]) => f.currentPlanet === sortValue);
+            const unmatched = entries.filter(([_, f]) => f.currentPlanet !== sortValue);
+            return [...matched, ...unmatched];
+        }
+        return entries;
+    };
 
     useEffect(() => { loadData(); }, []);
 
@@ -64,25 +84,22 @@ function CISFleetTab() {
             setLoading(false);
         }
     };
+    
+
+    const togglePlanetAccess = async (planetName) => {
+        const newValue = !planetAccess[planetName];
+        setPlanetAccess(prev => ({ ...prev, [planetName]: newValue }));
+        try {
+            await api.patch('/mapdata/planet-access', { planetName, cisAccessible: newValue });
+        } catch (error) {
+            showMessage('error', 'Failed to update planet access');
+            setPlanetAccess(prev => ({ ...prev, [planetName]: !newValue }));
+        }
+    };
 
     const showMessage = (type, text) => {
         setMessage({ type, text });
         setTimeout(() => setMessage({ type: '', text: '' }), 5000);
-    };
-
-    const getSortedFleets = () => {
-        const entries = Object.entries(fleets);
-        if (sortBy === 'group' && sortValue) {
-            const matched   = entries.filter(([_, f]) => f.group === sortValue);
-            const unmatched = entries.filter(([_, f]) => f.group !== sortValue);
-            return [...matched, ...unmatched];
-        }
-        if (sortBy === 'planet' && sortValue) {
-            const matched   = entries.filter(([_, f]) => f.currentPlanet === sortValue);
-            const unmatched = entries.filter(([_, f]) => f.currentPlanet !== sortValue);
-            return [...matched, ...unmatched];
-        }
-        return entries;
     };
 
     const toggleSelect = (fleetId) => {
@@ -90,7 +107,7 @@ function CISFleetTab() {
             if (prev.length === 0) return [fleetId];
             if (prev.includes(fleetId)) return prev.filter(id => id !== fleetId);
             const firstLoc = fleets[prev[0]].currentPlanet;
-            const newLoc   = fleets[fleetId].currentPlanet;
+            const newLoc = fleets[fleetId].currentPlanet;
             if (firstLoc !== newLoc) {
                 showMessage('error', 'Cannot select fleets from different locations');
                 return prev;
@@ -99,77 +116,32 @@ function CISFleetTab() {
         });
     };
 
-    const selectAll   = () => setSelectedFleets(Object.keys(fleets));
-    const deselectAll = () => setSelectedFleets([]);
-
-    // Transit progress — driven by real backend timestamps
-    const getTransitProgress = (fleet) => {
-        if (!fleet.travelingTo) return 0;
-        if (!fleet.arrivalDate) return 50;
-        const arrival = new Date(fleet.arrivalDate).getTime();
-        if (now >= arrival) return 100;
-        if (!fleet.departureDate) return 50;
-        const departure = new Date(fleet.departureDate).getTime();
-        const total = arrival - departure;
-        if (total <= 0) return 100;
-        return Math.min(99, Math.max(1, Math.round(((now - departure) / total) * 100)));
-    };
-
-    // Admin bar: 0-25% red → 25-50% orange → 50-75% yellow → 75-100% green
-    const getInstantBarColor = (pct) => {
-        if (pct < 25) return '#f44336';
-        if (pct < 50) return '#ff9800';
-        if (pct < 75) return '#ffeb3b';
-        return '#4caf50';
-    };
-
     const moveFleet = async () => {
-        if (selectedFleets.length === 0) { showMessage('error', 'No fleets selected'); return; }
-        if (!destination) { showMessage('error', 'No destination selected'); return; }
-
-        const payload = { fleetIds: [...selectedFleets], destination, travelDays, instantMove };
-
-        const doDispatch = async () => {
-            try {
-                const response = await api.post('/cisfleet/move', payload);
-                showMessage('success', response.data.message);
-                setInstantProgress(null);
-                deselectAll();
-                setDestination('');
-                await loadData();
-            } catch (error) {
-                setInstantProgress(null);
-                showMessage('error', error.response?.data?.error || 'Failed to move fleet');
-            }
-        };
-
-        if (instantMove) {
-            setInstantProgress(0);
-            const startTime = Date.now();
-            const duration  = 10000;
-            const tick = setInterval(() => {
-                const elapsed = Date.now() - startTime;
-                const pct = Math.min(100, Math.round((elapsed / duration) * 100));
-                setInstantProgress(pct);
-                if (pct >= 100) { clearInterval(tick); doDispatch(); }
-            }, 100);
-            return;
+        if (selectedFleets.length === 0) return showMessage('error', 'No fleets selected');
+        if (!destination) return showMessage('error', 'No destination selected');
+        try {
+            const response = await api.post('/cisfleet/move', {
+                fleetIds: selectedFleets,
+                destination,
+                travelDays,
+                instantMove
+            });
+            showMessage('success', response.data.message);
+            setSelectedFleets([]);
+            setDestination('');
+            await loadData();
+        } catch (error) {
+            showMessage('error', error.response?.data?.error || 'Failed to move fleet');
         }
-
-        await doDispatch();
     };
 
     const addFleet = async () => {
-        if (!newFleet.fleetName) { showMessage('error', 'Fleet name is required'); return; }
+        if (!newFleet.fleetName) return showMessage('error', 'Fleet name is required');
         try {
             await api.post('/cisfleet', newFleet);
             showMessage('success', 'CIS Fleet created successfully');
             setShowAddModal(false);
-            setNewFleet({
-                fleetName: '', commander: '', group: 'Unassigned',
-                startingPlanet: 'Geonosis', description: '',
-                composition: { lucrehulks: 0, munificents: 0, providences: 0 }
-            });
+            setNewFleet({ fleetName: '', commander: '', group: 'Unassigned', startingPlanet: 'Geonosis', description: '', composition: { lucrehulks: 0, frigates: 0 } });
             await loadData();
         } catch (error) {
             showMessage('error', error.response?.data?.error || 'Failed to create fleet');
@@ -179,9 +151,9 @@ function CISFleetTab() {
     const updateFleet = async () => {
         try {
             await api.put(`/cisfleet/${editingFleet.id}`, {
-                fleetName:   editingFleet.fleetName,
-                commander:   editingFleet.commander  || '',
-                group:       editingFleet.group      || 'Unassigned',
+                fleetName: editingFleet.fleetName,
+                commander: editingFleet.commander,
+                group: editingFleet.group,
                 description: editingFleet.description || '',
                 composition: editingFleet.composition
             });
@@ -204,387 +176,129 @@ function CISFleetTab() {
         }
     };
 
-    const togglePlanetAccess = async (planetName) => {
-        const newValue = !planetAccess[planetName];
-        setPlanetAccess(prev => ({ ...prev, [planetName]: newValue }));
-        try {
-            await api.patch('/mapdata/planet-access', { planetName, cisAccessible: newValue });
-        } catch (error) {
-            showMessage('error', 'Failed to update planet access');
-            setPlanetAccess(prev => ({ ...prev, [planetName]: !newValue }));
-        }
-    };
-
-    //  Computed values 
-    const fleetEntries = Object.entries(fleets);
-    const transitFleets = fleetEntries.filter(([_, f]) => f.travelingTo);
-    const transitCount  = transitFleets.length;
-    const totalFleets   = fleetEntries.length;
-
-    // Sum all CIS ship types across all fleets
-    const totalShips = fleetEntries.reduce((sum, [_, f]) => {
-        const c = f.composition || {};
-        return sum + (c.lucrehulks || 0) + (c.munificents || 0) + (c.providences || 0) + (c.dreadnoughts || 0) + (c.frigates || 0);
-    }, 0);
-
-    // Unique active faction groups
-    const activeFactions = new Set(
-        fleetEntries.map(([_, f]) => f.group).filter(g => g && g !== 'Unassigned')
-    ).size;
-
-    if (loading) return <div className="ft-loading">LOADING CIS FLEET DATA...</div>;
+    if (loading) return <div className="loading">Loading CIS fleet data...</div>;
 
     return (
-        <div className="ft-container">
+        <div className="fleet-tab">
+            <h3>CIS Fleet Management</h3>
 
-            {/*  ASSET TRACKER  */}
-            <div className="ft-asset-tracker">
-                <div className="ft-tracker-title">
-                    <span className="ft-title-tri">◆</span> CIS FLEET COMMAND
-                </div>
-                <div className="ft-stat-cards">
-                    <div className="ft-stat-card ft-card-red">
-                        <div className="ft-stat-num ft-num-red">{totalFleets}</div>
-                        <div className="ft-stat-label">TOTAL FLEETS</div>
-                    </div>
-                    <div className="ft-stat-card ft-card-maroon">
-                        <div className="ft-stat-num ft-num-maroon">{totalShips}</div>
-                        <div className="ft-stat-label">TOTAL SHIPS</div>
-                    </div>
-                    <div className="ft-stat-card ft-card-orange">
-                        <div className="ft-stat-num ft-num-orange">{transitCount}</div>
-                        <div className="ft-stat-label">IN TRANSIT</div>
-                    </div>
-                    <div className="ft-stat-card ft-card-dim">
-                        <div className="ft-stat-num ft-num-red" style={{ opacity: 0.6 }}>{activeFactions}</div>
-                        <div className="ft-stat-label">FACTIONS ACTIVE</div>
-                    </div>
-                </div>
-            </div>
+            {message.text && <div className={`message ${message.type}`}>{message.text}</div>}
 
-            {/*  MESSAGE  */}
-            {message.text && (
-                <div className={`ft-message ft-msg-${message.type}`}>{message.text}</div>
-            )}
+            <div className="fleet-controls">
+                <button onClick={() => setShowAddModal(true)} className="btn-add">Add New Fleet</button>
+                <button onClick={() => setSelectedFleets(Object.keys(fleets))} className="btn-select-all">Select All</button>
+                <button onClick={() => setSelectedFleets([])} className="btn-deselect-all">Deselect All</button>
 
-            {/*  ACTIVE HYPERSPACE ROUTES  */}
-            {transitFleets.length > 0 && (
-                <div className="ft-routes-section">
-                    <div className="ft-section-header">
-                        <span className="ft-hdr-diamond">◆</span> ACTIVE HYPERSPACE ROUTES
-                    </div>
-                    {transitFleets.map(([id, fleet]) => {
-                        const pct = getTransitProgress(fleet);
-                        const barColor = pct >= 100 ? '#c62828' : '#ff9800';
-                        return (
-                            <div key={id} className="ft-route-entry">
-                                <div className="ft-route-top">
-                                    <span className="ft-route-name">{fleet.fleetName || id}</span>
-                                    <span className="ft-route-path">
-                                        {fleet.currentPlanet} → <span className="ft-route-dest">{fleet.travelingTo}</span>
-                                    </span>
-                                    <span className="ft-route-pct" style={{ color: barColor }}>{pct}%</span>
-                                    {pct >= 100 && (
-                                        <button onClick={loadData} className="ft-btn-confirm">CONFIRM ARRIVAL</button>
-                                    )}
-                                </div>
-                                <div className="ft-prog-wrap">
-                                    <div className="ft-prog-bar" style={{ width: `${pct}%`, background: barColor }} />
-                                </div>
-                                {fleet.arrivalDate && (
-                                    <div className="ft-route-eta">ETA: {new Date(fleet.arrivalDate).toLocaleString()}</div>
-                                )}
-                            </div>
-                        );
-                    })}
-                </div>
-            )}
-
-            {/*  FLEET CONTROLS  */}
-            <div className="ft-controls">
-                <button onClick={() => setShowAddModal(true)} className="ft-btn ft-btn-add">+ ADD FLEET</button>
-                <button onClick={selectAll}   className="ft-btn ft-btn-select">SELECT ALL</button>
-                <button onClick={deselectAll} className="ft-btn ft-btn-deselect">DESELECT ALL</button>
-
-                <select className="ft-select" onChange={(e) => {
-                    if (e.target.value) { setSortBy('group');  setSortValue(e.target.value); }
-                    else               { setSortBy('default'); setSortValue(''); }
-                }} value={sortBy === 'group' ? sortValue : ''}>
+                <select onChange={(e) => { setSortBy(e.target.value ? 'group' : 'default'); setSortValue(e.target.value); }} value={sortBy === 'group' ? sortValue : ''}>
                     <option value="">Group by Faction</option>
                     {CIS_GROUPS.map(g => <option key={g} value={g}>{g}</option>)}
                 </select>
 
-                <select className="ft-select" onChange={(e) => {
-                    if (e.target.value) { setSortBy('planet'); setSortValue(e.target.value); }
-                    else               { setSortBy('default'); setSortValue(''); }
-                }} value={sortBy === 'planet' ? sortValue : ''}>
+                <select onChange={(e) => { setSortBy(e.target.value ? 'planet' : 'default'); setSortValue(e.target.value); }} value={sortBy === 'planet' ? sortValue : ''}>
                     <option value="">Group by Planet</option>
                     {planets.map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
             </div>
 
-            {/*  MOVE PANEL  */}
             {selectedFleets.length > 0 && (
-                <div className="ft-move-panel">
-                    <div className="ft-move-title">◈ HYPERSPACE DISPATCH — {selectedFleets.length} UNIT(S) SELECTED</div>
-                    <div className="ft-move-controls">
-                        <select className="ft-select" value={destination} onChange={(e) => {
+                <div className="move-panel">
+                    <h4>Move Fleet ({selectedFleets.length} selected)</h4>
+                    <div className="move-controls">
+                        <select value={destination} onChange={(e) => {
                             setDestination(e.target.value);
-                            if (e.target.value && selectedFleets.length > 0) {
-                                // Basic travel time: keep existing travelDays as-is from state
+                            if (e.target.value && fleets[selectedFleets[0]]) {
+                                setTravelDays(calculateTravelDays(fleets[selectedFleets[0]].currentPlanet, e.target.value));
                             }
                         }}>
-                            <option value="">— SELECT DESTINATION —</option>
-                            {planets.filter(p => planetAccess[p] !== false).map(p => (
-                                <option key={p} value={p}>{p}</option>
-                            ))}
+                            <option value="">-- Select Destination --</option>
+                            {planets.filter(p => planetAccess[p] !== false).map(p => <option key={p} value={p}>{p}</option>)}
                         </select>
-                        <span className="ft-travel-badge">
-                            TRAVEL: {travelDays} day{travelDays !== 1 ? 's' : ''}
-                        </span>
-                        {/* Manual travel days input for CIS (no sector map) */}
-                        <input
-                            type="number"
-                            min="1"
-                            value={travelDays}
-                            onChange={e => setTravelDays(Math.max(1, parseInt(e.target.value) || 1))}
-                            style={{
-                                width: 60, padding: '5px 8px', borderRadius: 1,
-                                border: '1px solid rgba(229,57,53,0.2)',
-                                background: 'rgba(30,0,0,0.22)', color: '#c0cfe0',
-                                fontFamily: 'Courier New', fontSize: '0.78rem'
-                            }}
-                        />
-                        {user?.role === 'admin' && (
-                            <label className="ft-instant-label">
-                                <input
-                                    type="checkbox"
-                                    checked={instantMove}
-                                    onChange={e => setInstantMove(e.target.checked)}
-                                    disabled={instantProgress !== null}
-                                />
-                                INSTANT MOVE (ADMIN)
-                            </label>
-                        )}
-                        <button onClick={moveFleet} className="ft-btn ft-btn-move" disabled={instantProgress !== null}>DISPATCH</button>
-                        <button onClick={deselectAll} className="ft-btn ft-btn-cancel" disabled={instantProgress !== null}>CANCEL</button>
+                        <span className="travel-time">Travel Time: {travelDays} day{travelDays !== 1 ? 's' : ''}</span>
+                        <label>
+                            <input
+                                type="checkbox"
+                                checked={instantMove}
+                                onChange={(e) => setInstantMove(e.target.checked)}
+                            />
+                            Instant Move
+                        </label>
+                        <button onClick={moveFleet} className="btn-move">Move Fleet</button>
                     </div>
-                    {instantProgress !== null && (
-                        <div className="ft-instant-prog-wrap">
-                            <div className="ft-instant-prog-label">ADMIN DISPATCH IN PROGRESS — {instantProgress}%</div>
-                            <div className="ft-instant-prog-track">
-                                <div
-                                    className="ft-instant-prog-fill"
-                                    style={{ width: `${instantProgress}%`, background: getInstantBarColor(instantProgress) }}
-                                />
-                            </div>
-                        </div>
-                    )}
                 </div>
             )}
 
-            {/*  FLEET CARDS  */}
-            <div className="ft-fleet-section">
-                <div className="ft-fleet-sec-title">CIS FLEET ROSTER</div>
-
-                {getSortedFleets().length === 0 ? (
-                    <div style={{ padding: '24px 16px', color: 'rgba(192,207,224,0.3)', fontSize: '0.8rem', letterSpacing: '1px' }}>
-                        No fleets on record.
+            <div className="fleet-list">
+                {getSortedFleets().map(([id, fleet]) => (
+                    <div key={id} className={`venator-card ${selectedFleets.includes(id) ? 'selected' : ''}`}>
+                        <input type="checkbox" checked={selectedFleets.includes(id)} onChange={() => toggleSelect(id)} />
+                        <div className="venator-info">
+                            <h4>{fleet.fleetName || id}</h4>
+                            <p><strong>Commander:</strong> {fleet.commander || 'None'}</p>
+                            <p><strong>Faction Group:</strong> {fleet.group}</p>
+                            <p><strong>Composition:</strong> {fleet.composition?.dreadnoughts || 0} Dreadnoughts, {fleet.composition?.munificents || 0} Munificents, {fleet.composition?.providences || 0} Providences</p>
+                            <p><strong>Location:</strong> {fleet.currentPlanet}</p>
+                            {fleet.description && <p><strong>Description:</strong> {fleet.description}</p>}
+                            {fleet.travelingTo && (
+                                <p className="in-transit">In Transit to {fleet.travelingTo} - Arrives {new Date(fleet.arrivalDate).toLocaleDateString()}</p>
+                            )}
+                        </div>
+                        <div className="venator-actions">
+                            <button onClick={() => setEditingFleet({ id, ...fleet })} className="btn-edit">Edit</button>
+                            <button onClick={() => deleteFleet(id)} className="btn-delete">Delete</button>
+                        </div>
                     </div>
-                ) : (
-                    <div className="cis-fleet-grid">
-                        {getSortedFleets().map(([id, fleet]) => {
-                            const isTransit = !!fleet.travelingTo;
-                            const pct = isTransit ? getTransitProgress(fleet) : null;
-
-                            // Build composition string
-                            const c = fleet.composition || {};
-                            const compParts = [];
-                            if (c.lucrehulks  > 0) compParts.push(`${c.lucrehulks} Lucrehulk${c.lucrehulks  !== 1 ? 's' : ''}`);
-                            if (c.dreadnoughts > 0) compParts.push(`${c.dreadnoughts} Dreadnought${c.dreadnoughts !== 1 ? 's' : ''}`);
-                            if (c.munificents > 0) compParts.push(`${c.munificents} Munificent${c.munificents !== 1 ? 's' : ''}`);
-                            if (c.providences > 0) compParts.push(`${c.providences} Providence${c.providences !== 1 ? 's' : ''}`);
-                            if (c.frigates    > 0) compParts.push(`${c.frigates} Frigate${c.frigates    !== 1 ? 's' : ''}`);
-                            const compStr = compParts.length > 0 ? compParts.join(' · ') : '—';
-
-                            return (
-                                <div
-                                    key={id}
-                                    className={`cis-fleet-card${selectedFleets.includes(id) ? ' cis-card-selected' : ''}${isTransit ? ' cis-card-transit' : ''}`}
-                                >
-                                    {/*  CARD HEADER  */}
-                                    <div className="cis-card-header">
-                                        <input
-                                            type="checkbox"
-                                            className="ft-checkbox"
-                                            checked={selectedFleets.includes(id)}
-                                            onChange={() => toggleSelect(id)}
-                                        />
-                                        <span className="cis-fleet-name">{fleet.fleetName || id}</span>
-                                        {fleet.group && fleet.group !== 'Unassigned' && (
-                                            <span className="cis-group-tag">{fleet.group}</span>
-                                        )}
-                                        <div className="ft-row-actions">
-                                            {!isTransit && (
-                                                <button
-                                                    onClick={() => { deselectAll(); setSelectedFleets([id]); }}
-                                                    className="ft-btn-sm cis-bsm-move"
-                                                >MOVE</button>
-                                            )}
-                                            <button
-                                                onClick={() => setEditingFleet({ id, ...fleet })}
-                                                className="ft-btn-sm ft-bsm-edit"
-                                            >EDIT</button>
-                                            <button
-                                                onClick={() => deleteFleet(id)}
-                                                className="ft-btn-sm ft-bsm-del"
-                                            >DEL</button>
-                                        </div>
-                                    </div>
-
-                                    {/*  CARD BODY  */}
-                                    <div className="cis-card-body">
-                                        <div className="cis-card-fields">
-                                            {fleet.commander && (
-                                                <div className="cis-field">
-                                                    <span className="cis-field-label">Commander</span>
-                                                    <span className="cis-field-value">{fleet.commander}</span>
-                                                </div>
-                                            )}
-                                            <div className="cis-field">
-                                                <span className="cis-field-label">Location</span>
-                                                <span className={`cis-field-value${isTransit ? ' cis-field-transit' : ' cis-field-planet'}`}>
-                                                    {isTransit
-                                                        ? `Hyperspace → ${fleet.travelingTo}`
-                                                        : (fleet.currentPlanet || '—')}
-                                                </span>
-                                            </div>
-                                            <div className="cis-field cis-field-wide">
-                                                <span className="cis-field-label">Composition</span>
-                                                <span className="cis-field-value">{compStr}</span>
-                                            </div>
-                                        </div>
-
-                                        {/* Transit progress bar */}
-                                        {isTransit && (
-                                            <div className="cis-transit-section">
-                                                <div className="cis-prog-row">
-                                                    <div className="cis-prog-track">
-                                                        <div className="cis-prog-fill" style={{ width: `${pct}%` }} />
-                                                    </div>
-                                                    <span className="cis-prog-pct">{pct}%</span>
-                                                </div>
-                                                {fleet.arrivalDate && (
-                                                    <div className="cis-eta">
-                                                        ETA: {new Date(fleet.arrivalDate).toLocaleString()}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-
-                                        {/* Description box */}
-                                        {fleet.description && (
-                                            <div className="cis-card-desc">
-                                                <div className="cis-desc-text">{fleet.description}</div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                )}
+                ))}
             </div>
 
-            {/*  ADD FLEET MODAL  */}
             {showAddModal && (
-                <div className="ft-modal">
-                    <div className="ft-modal-content">
-                        <div className="ft-modal-title">◈ ADD NEW CIS FLEET</div>
-                        <input className="ft-input" type="text" placeholder="Fleet Name (e.g., Invisible Hand)"
-                            value={newFleet.fleetName}
-                            onChange={e => setNewFleet({ ...newFleet, fleetName: e.target.value })} />
-                        <input className="ft-input" type="text" placeholder="Commander (e.g., General Grievous)"
-                            value={newFleet.commander}
-                            onChange={e => setNewFleet({ ...newFleet, commander: e.target.value })} />
-                        <select className="ft-input" value={newFleet.group}
-                            onChange={e => setNewFleet({ ...newFleet, group: e.target.value })}>
+                <div className="modal">
+                    <div className="modal-content">
+                        <h4>Add New CIS Fleet</h4>
+                        <input type="text" placeholder="Fleet Name (e.g., Invisible Hand)" value={newFleet.fleetName} onChange={(e) => setNewFleet({ ...newFleet, fleetName: e.target.value })} />
+                        <input type="text" placeholder="Commander (e.g., General Grievous)" value={newFleet.commander} onChange={(e) => setNewFleet({ ...newFleet, commander: e.target.value })} />
+                        <select value={newFleet.group} onChange={(e) => setNewFleet({ ...newFleet, group: e.target.value })}>
                             {CIS_GROUPS.map(g => <option key={g} value={g}>{g}</option>)}
                         </select>
-                        <select className="ft-input" value={newFleet.startingPlanet}
-                            onChange={e => setNewFleet({ ...newFleet, startingPlanet: e.target.value })}>
+                        <select value={newFleet.startingPlanet} onChange={(e) => setNewFleet({ ...newFleet, startingPlanet: e.target.value })}>
                             {planets.map(p => <option key={p} value={p}>{p}</option>)}
                         </select>
-                        <label className="cis-input-label">Lucrehulks</label>
-                        <input className="ft-input" type="number" min="0" placeholder="Lucrehulks"
-                            value={newFleet.composition?.lucrehulks || ''}
-                            onChange={e => setNewFleet({ ...newFleet, composition: { ...newFleet.composition, lucrehulks: parseInt(e.target.value) || 0 } })} />
-                        <label className="cis-input-label">Munificents</label>
-                        <input className="ft-input" type="number" min="0" placeholder="Munificents"
-                            value={newFleet.composition?.munificents || ''}
-                            onChange={e => setNewFleet({ ...newFleet, composition: { ...newFleet.composition, munificents: parseInt(e.target.value) || 0 } })} />
-                        <label className="cis-input-label">Providences</label>
-                        <input className="ft-input" type="number" min="0" placeholder="Providences"
-                            value={newFleet.composition?.providences || ''}
-                            onChange={e => setNewFleet({ ...newFleet, composition: { ...newFleet.composition, providences: parseInt(e.target.value) || 0 } })} />
-                        <textarea className="ft-textarea" placeholder="Fleet description (optional)" rows={3}
-                            value={newFleet.description || ''}
-                            onChange={e => setNewFleet({ ...newFleet, description: e.target.value })} />
-                        <div className="ft-modal-actions">
-                            <button onClick={addFleet} className="ft-btn ft-btn-save">CREATE FLEET</button>
-                            <button onClick={() => setShowAddModal(false)} className="ft-btn ft-btn-cancel">CANCEL</button>
+                        <input type="number" min="0" placeholder="Dreadnoughts" value={newFleet.composition?.dreadnoughts || ''} onChange={(e) => setNewFleet({ ...newFleet, composition: { ...newFleet.composition, dreadnoughts: parseInt(e.target.value) || 0 } })} />
+                        <input type="number" min="0" placeholder="Munificents" value={newFleet.composition?.munificents || ''} onChange={(e) => setNewFleet({ ...newFleet, composition: { ...newFleet.composition, munificents: parseInt(e.target.value) || 0 } })} />
+                        <input type="number" min="0" placeholder="Providences" value={newFleet.composition?.providences || ''} onChange={(e) => setNewFleet({ ...newFleet, composition: { ...newFleet.composition, providences: parseInt(e.target.value) || 0 } })} />
+                        <textarea placeholder="Fleet description (optional)" value={newFleet.description || ''} onChange={(e) => setNewFleet({ ...newFleet, description: e.target.value })} rows={3} />
+                        <div className="modal-actions">
+                            <button onClick={addFleet} className="btn-save">Create Fleet</button>
+                            <button onClick={() => setShowAddModal(false)} className="btn-cancel">Cancel</button>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/*  EDIT FLEET MODAL  */}
             {editingFleet && (
-                <div className="ft-modal">
-                    <div className="ft-modal-content">
-                        <div className="ft-modal-title">◈ {editingFleet.fleetName || 'EDIT FLEET'}</div>
-                        <input className="ft-input" type="text" placeholder="Fleet Name"
-                            value={editingFleet.fleetName}
-                            onChange={e => setEditingFleet({ ...editingFleet, fleetName: e.target.value })} />
-                        <input className="ft-input" type="text" placeholder="Commander"
-                            value={editingFleet.commander || ''}
-                            onChange={e => setEditingFleet({ ...editingFleet, commander: e.target.value })} />
-                        <select className="ft-input" value={editingFleet.group || 'Unassigned'}
-                            onChange={e => setEditingFleet({ ...editingFleet, group: e.target.value })}>
+                <div className="modal">
+                    <div className="modal-content">
+                        <h4>Edit CIS Fleet</h4>
+                        <input type="text" placeholder="Fleet Name" value={editingFleet.fleetName} onChange={(e) => setEditingFleet({ ...editingFleet, fleetName: e.target.value })} />
+                        <input type="text" placeholder="Commander" value={editingFleet.commander || ''} onChange={(e) => setEditingFleet({ ...editingFleet, commander: e.target.value })} />
+                        <select value={editingFleet.group} onChange={(e) => setEditingFleet({ ...editingFleet, group: e.target.value })}>
                             {CIS_GROUPS.map(g => <option key={g} value={g}>{g}</option>)}
                         </select>
-                        <label className="cis-input-label">Lucrehulks</label>
-                        <input className="ft-input" type="number" min="0"
-                            value={editingFleet.composition?.lucrehulks || ''}
-                            onChange={e => setEditingFleet({ ...editingFleet, composition: { ...editingFleet.composition, lucrehulks: parseInt(e.target.value) || 0 } })} />
-                        <label className="cis-input-label">Munificents</label>
-                        <input className="ft-input" type="number" min="0"
-                            value={editingFleet.composition?.munificents || ''}
-                            onChange={e => setEditingFleet({ ...editingFleet, composition: { ...editingFleet.composition, munificents: parseInt(e.target.value) || 0 } })} />
-                        <label className="cis-input-label">Providences</label>
-                        <input className="ft-input" type="number" min="0"
-                            value={editingFleet.composition?.providences || ''}
-                            onChange={e => setEditingFleet({ ...editingFleet, composition: { ...editingFleet.composition, providences: parseInt(e.target.value) || 0 } })} />
-                        <textarea className="ft-textarea" placeholder="Fleet description (optional)" rows={3}
-                            value={editingFleet.description || ''}
-                            onChange={e => setEditingFleet({ ...editingFleet, description: e.target.value })} />
-                        <div className="ft-modal-actions">
-                            <button onClick={updateFleet} className="ft-btn ft-btn-save">SAVE CHANGES</button>
-                            <button onClick={() => setEditingFleet(null)} className="ft-btn ft-btn-cancel">CANCEL</button>
+                        <input type="number" min="0" placeholder="Lucrehulks" value={editingFleet.composition?.lucrehulks || ''} onChange={(e) => setEditingFleet({ ...editingFleet, composition: { ...editingFleet.composition, lucrehulks: parseInt(e.target.value) || 0 } })} />
+                        <input type="number" min="0" placeholder="Frigates" value={editingFleet.composition?.frigates || ''} onChange={(e) => setEditingFleet({ ...editingFleet, composition: { ...editingFleet.composition, frigates: parseInt(e.target.value) || 0 } })} />
+                        <textarea placeholder="Fleet description (optional)" value={editingFleet.description || ''} onChange={(e) => setEditingFleet({ ...editingFleet, description: e.target.value })} rows={3} />
+                        <div className="modal-actions">
+                            <button onClick={updateFleet} className="btn-save">Save Changes</button>
+                            <button onClick={() => setEditingFleet(null)} className="btn-cancel">Cancel</button>
                         </div>
                     </div>
                 </div>
             )}
-
-            {/*  PLANET ACCESS PANEL  */}
-            <div className="cis-planet-access">
-                <div className="cis-planet-access-title">◆ REPUBLIC TRAVEL PERMISSIONS</div>
-                <div className="cis-planet-access-desc">
-                    Unchecked planets cannot be travelled to by Republic fleets.
-                </div>
-                <div className="cis-planet-access-list">
+            <div className="planet-access-section">
+                <h4>Republic Fleet Travel Permissions</h4>
+                <p className="access-desc">Unchecked planets cannot be travelled to by Republic fleets.</p>
+                <div className="planet-access-list">
                     {planets.map(planet => (
-                        <label key={planet} className="cis-planet-access-item">
+                        <label key={planet} className="planet-access-item">
                             <input
                                 type="checkbox"
                                 checked={planetAccess[planet] !== false}
@@ -595,7 +309,6 @@ function CISFleetTab() {
                     ))}
                 </div>
             </div>
-
         </div>
     );
 }
