@@ -1,0 +1,693 @@
+/*  CIS FLEET TAB  
+
+/*  CONTAINER  */
+.ft-container {
+    padding: 20px 0;
+    color: #c0cfe0;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+.ft-loading {
+    color: #e53935;
+    padding: 60px;
+    text-align: center;
+    font-size: 1rem;
+    letter-spacing: 4px;
+}
+
+/*  ASSET TRACKER  */
+.ft-asset-tracker { margin-bottom: 18px; }
+
+.ft-tracker-title {
+    color: #b71c1c;
+    font-size: 0.88rem;
+    font-weight: 700;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+}
+
+.ft-title-tri { color: #b71c1c; }
+
+.ft-stat-cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 14px;
+}
+
+@media (max-width: 800px) { .ft-stat-cards { grid-template-columns: repeat(2, 1fr); } }
+
+.ft-stat-card {
+    background: rgba(8, 16, 32, 0.9);
+    padding: 18px 20px 14px;
+    border-radius: 2px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-top: 3px solid transparent;
+}
+
+.ft-card-red    { border-top-color: #c62828; }
+.ft-card-maroon { border-top-color: #b71c1c; }
+.ft-card-orange { border-top-color: #ff9800; }
+.ft-card-dim    { border-top-color: rgba(229, 57, 53, 0.4); }
+
+/* keep legacy color classes so stat card values render */
+.ft-card-blue   { border-top-color: #c62828; }
+.ft-card-purple { border-top-color: #b71c1c; }
+.ft-card-gold   { border-top-color: rgba(229, 57, 53, 0.4); }
+
+.ft-stat-num {
+    font-size: 2.6rem;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 6px;
+}
+
+.ft-num-red    { color: #e53935; }
+.ft-num-maroon { color: #b71c1c; }
+.ft-num-orange { color: #ff9800; }
+
+/* override Republic color names */
+.ft-num-blue   { color: #e53935; }
+.ft-num-purple { color: #c62828; }
+.ft-num-gold   { color: rgba(229, 57, 53, 0.75); }
+
+.ft-stat-label {
+    font-size: 0.65rem;
+    letter-spacing: 2.5px;
+    color: rgba(192, 207, 224, 0.4);
+    text-transform: uppercase;
+}
+
+/*  MESSAGES  */
+.ft-message {
+    padding: 10px 14px;
+    border-radius: 2px;
+    margin-bottom: 14px;
+    font-size: 0.82rem;
+    letter-spacing: 1px;
+}
+
+.ft-msg-success {
+    background: rgba(76, 175, 80, 0.1);
+    border: 1px solid rgba(76, 175, 80, 0.3);
+    color: #4caf50;
+}
+
+.ft-msg-error {
+    background: rgba(198, 40, 40, 0.12);
+    border: 1px solid rgba(198, 40, 40, 0.35);
+    color: #ef5350;
+}
+
+/*  SHARED SECTION HEADER  */
+.ft-section-header {
+    color: #e53935;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+}
+
+.ft-hdr-diamond { color: #b71c1c; }
+
+/*  ACTIVE HYPERSPACE ROUTES  */
+.ft-routes-section {
+    background: rgba(8, 16, 32, 0.7);
+    border: 1px solid rgba(229, 57, 53, 0.1);
+    border-radius: 2px;
+    padding: 18px;
+    margin-bottom: 18px;
+}
+
+.ft-route-entry {
+    background: rgba(4, 8, 20, 0.9);
+    border: 1px solid rgba(229, 57, 53, 0.08);
+    border-radius: 2px;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+}
+
+.ft-route-entry:last-child { margin-bottom: 0; }
+
+.ft-route-top {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+
+.ft-route-name { font-weight: 700; color: #c0cfe0; font-size: 0.88rem; min-width: 80px; }
+.ft-route-path { color: rgba(192, 207, 224, 0.5); font-size: 0.82rem; flex: 1; }
+.ft-route-dest { color: #ff9800; font-weight: 700; }
+.ft-route-pct  { font-weight: 700; font-size: 0.88rem; }
+
+.ft-btn-confirm {
+    background: #c62828;
+    color: #fff;
+    border: none;
+    padding: 5px 13px;
+    border-radius: 1px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    cursor: pointer;
+    text-transform: uppercase;
+    font-family: 'Courier New', Courier, monospace;
+    transition: background 0.15s;
+}
+
+.ft-btn-confirm:hover { background: #b71c1c; }
+
+.ft-prog-wrap {
+    height: 5px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 1px;
+    margin-bottom: 7px;
+    overflow: hidden;
+}
+
+.ft-prog-bar { height: 100%; border-radius: 1px; transition: width 0.5s ease; }
+.ft-route-eta { color: rgba(192, 207, 224, 0.35); font-size: 0.72rem; letter-spacing: 0.5px; }
+
+/*  FLEET CONTROLS  */
+.ft-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.ft-btn {
+    padding: 6px 14px;
+    border: none;
+    border-radius: 1px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    cursor: pointer;
+    text-transform: uppercase;
+    font-family: 'Courier New', Courier, monospace;
+    transition: opacity 0.15s;
+    white-space: nowrap;
+}
+
+.ft-btn:hover { opacity: 0.82; }
+
+.ft-btn-add {
+    background: linear-gradient(135deg, #7f0000 0%, #c62828 100%);
+    color: #fff;
+    border: 1px solid rgba(183, 28, 28, 0.5);
+}
+
+.ft-btn-select {
+    background: rgba(183, 28, 28, 0.18);
+    color: #ef5350;
+    border: 1px solid rgba(229, 57, 53, 0.3);
+}
+
+.ft-btn-deselect {
+    background: rgba(60, 0, 0, 0.18);
+    color: rgba(239, 83, 80, 0.6);
+    border: 1px solid rgba(183, 28, 28, 0.22);
+}
+
+.ft-btn-move   { background: rgba(229, 57, 53, 0.16); color: #e53935; border: 1px solid rgba(229, 57, 53, 0.35); }
+.ft-btn-save   { background: rgba(229, 57, 53, 0.16); color: #e53935; border: 1px solid rgba(229, 57, 53, 0.35); }
+.ft-btn-cancel { background: rgba(60, 0, 0, 0.28); color: rgba(239, 83, 80, 0.8); border: 1px solid rgba(183, 28, 28, 0.3); }
+
+.ft-select {
+    padding: 6px 10px;
+    border-radius: 1px;
+    border: 1px solid rgba(229, 57, 53, 0.2);
+    background: rgba(40, 0, 0, 0.18);
+    color: #c0cfe0;
+    cursor: pointer;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.78rem;
+}
+
+.ft-select option { background: #100608; color: #c0cfe0; }
+
+/*  MOVE PANEL  */
+.ft-move-panel {
+    background: rgba(8, 16, 32, 0.85);
+    border: 1px solid rgba(229, 57, 53, 0.28);
+    border-left: 3px solid #e53935;
+    border-radius: 2px;
+    padding: 14px 18px;
+    margin-bottom: 16px;
+}
+
+.ft-move-title {
+    color: #e53935;
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+}
+
+.ft-move-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.ft-travel-badge {
+    background: rgba(229, 57, 53, 0.07);
+    border: 1px solid rgba(229, 57, 53, 0.22);
+    color: #e53935;
+    padding: 5px 11px;
+    border-radius: 1px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    white-space: nowrap;
+}
+
+.ft-instant-label {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    color: rgba(192, 207, 224, 0.6);
+    font-size: 0.72rem;
+    letter-spacing: 1px;
+    cursor: pointer;
+}
+
+/*  FLEET SECTION  */
+.ft-fleet-section {
+    background: rgba(8, 16, 32, 0.5);
+    border: 1px solid rgba(229, 57, 53, 0.08);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+.ft-fleet-sec-title {
+    background: rgba(0, 0, 0, 0.4);
+    color: #b71c1c;
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(183, 28, 28, 0.2);
+}
+
+.ft-checkbox {
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
+    accent-color: #e53935;
+}
+
+/*  SMALL BUTTONS  */
+.ft-row-actions {
+    display: flex;
+    gap: 6px;
+    justify-content: flex-end;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.ft-btn-sm {
+    padding: 4px 9px;
+    border: none;
+    border-radius: 1px;
+    font-size: 0.63rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    cursor: pointer;
+    text-transform: uppercase;
+    font-family: 'Courier New', Courier, monospace;
+    transition: opacity 0.15s;
+    white-space: nowrap;
+}
+
+.ft-btn-sm:hover { opacity: 0.75; }
+
+.cis-bsm-move {
+    background: rgba(229, 57, 53, 0.13);
+    color: #e53935;
+    border: 1px solid rgba(229, 57, 53, 0.3);
+}
+
+.ft-bsm-edit {
+    background: rgba(255, 152, 0, 0.12);
+    color: #ff9800;
+    border: 1px solid rgba(255, 152, 0, 0.28);
+}
+
+.ft-bsm-del {
+    background: rgba(127, 0, 0, 0.18);
+    color: #ef5350;
+    border: 1px solid rgba(198, 40, 40, 0.3);
+}
+
+/*   CIS FLEET CARD GRID   */
+.cis-fleet-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 12px;
+    padding: 14px;
+}
+
+@media (max-width: 700px) { .cis-fleet-grid { grid-template-columns: 1fr; } }
+
+.cis-fleet-card {
+    background: rgba(8, 16, 32, 0.92);
+    border: 1px solid rgba(229, 57, 53, 0.15);
+    border-top: 3px solid #b71c1c;
+    border-radius: 2px;
+    overflow: hidden;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.cis-fleet-card:hover {
+    border-color: rgba(229, 57, 53, 0.38);
+    box-shadow: 0 0 14px rgba(183, 28, 28, 0.12);
+}
+
+.cis-card-selected {
+    border-color: rgba(229, 57, 53, 0.65) !important;
+    box-shadow: 0 0 18px rgba(229, 57, 53, 0.16) !important;
+    border-top-color: #e53935 !important;
+}
+
+.cis-card-transit { border-top-color: #ff9800 !important; }
+
+/* thin colored bar at very top of card */
+.cis-card-accent-bar {
+    height: 0;  /* provided by border-top; kept as hook for future use */
+}
+
+.cis-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: rgba(0, 0, 0, 0.35);
+    border-bottom: 1px solid rgba(229, 57, 53, 0.09);
+}
+
+.cis-fleet-name {
+    color: #c0cfe0;
+    font-weight: 700;
+    font-size: 0.88rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+    min-width: 0;
+}
+
+.cis-group-tag {
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: rgba(229, 57, 53, 0.6);
+    border: 1px solid rgba(229, 57, 53, 0.18);
+    padding: 1px 6px;
+    border-radius: 1px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.cis-card-body {
+    padding: 12px 14px;
+}
+
+/* 2-column field grid */
+.cis-card-fields {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px 14px;
+    margin-bottom: 10px;
+}
+
+.cis-field {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.cis-field-wide {
+    grid-column: 1 / -1;
+}
+
+.cis-field-label {
+    color: rgba(192, 207, 224, 0.35);
+    font-size: 0.6rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.cis-field-value {
+    color: #c0cfe0;
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cis-field-planet { color: #e53935; }
+.cis-field-transit { color: #ff9800; }
+
+/* Transit progress inside card */
+.cis-transit-section {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 152, 0, 0.12);
+}
+
+.cis-prog-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.cis-prog-track {
+    flex: 1;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.07);
+    border-radius: 1px;
+    overflow: hidden;
+}
+
+.cis-prog-fill {
+    height: 100%;
+    background: #ff9800;
+    border-radius: 1px;
+    transition: width 0.5s ease;
+}
+
+.cis-prog-pct {
+    color: #ff9800;
+    font-size: 0.7rem;
+    font-weight: 700;
+    white-space: nowrap;
+    min-width: 32px;
+    text-align: right;
+}
+
+.cis-eta {
+    color: rgba(192, 207, 224, 0.32);
+    font-size: 0.68rem;
+    letter-spacing: 0.3px;
+}
+
+/* Description box — darker, slightly inset */
+.cis-card-desc {
+    margin-top: 10px;
+    padding: 8px 10px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(229, 57, 53, 0.08);
+    border-left: 2px solid rgba(183, 28, 28, 0.35);
+    border-radius: 1px;
+}
+
+.cis-desc-text {
+    color: rgba(192, 207, 224, 0.48);
+    font-size: 0.72rem;
+    line-height: 1.55;
+}
+
+/*  MODALS  */
+.ft-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.88);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.ft-modal-content {
+    background: #06090f;
+    border: 1px solid rgba(229, 57, 53, 0.3);
+    border-radius: 2px;
+    padding: 26px;
+    min-width: 400px;
+    max-width: 520px;
+    max-height: 85vh;
+    overflow-y: auto;
+}
+
+.ft-modal-title {
+    color: #e53935;
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 18px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(229, 57, 53, 0.18);
+}
+
+.ft-input {
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 8px 11px;
+    border-radius: 1px;
+    border: 1px solid rgba(229, 57, 53, 0.14);
+    background: rgba(30, 0, 0, 0.22);
+    color: #c0cfe0;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.82rem;
+    box-sizing: border-box;
+}
+
+.ft-input:focus {
+    outline: none;
+    border-color: rgba(229, 57, 53, 0.42);
+}
+
+.ft-input option { background: #100608; }
+
+.ft-textarea {
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 8px 11px;
+    border-radius: 1px;
+    border: 1px solid rgba(229, 57, 53, 0.14);
+    background: rgba(30, 0, 0, 0.22);
+    color: #c0cfe0;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.82rem;
+    box-sizing: border-box;
+    resize: vertical;
+}
+
+.ft-textarea:focus {
+    outline: none;
+    border-color: rgba(229, 57, 53, 0.42);
+}
+
+.ft-modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 14px;
+}
+
+/*  PLANET ACCESS PANEL  */
+.cis-planet-access {
+    background: rgba(8, 16, 32, 0.7);
+    border: 1px solid rgba(229, 57, 53, 0.1);
+    border-radius: 2px;
+    padding: 18px;
+    margin-top: 18px;
+}
+
+.cis-planet-access-title {
+    color: #b71c1c;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+}
+
+.cis-planet-access-desc {
+    color: rgba(192, 207, 224, 0.38);
+    font-size: 0.72rem;
+    margin-bottom: 12px;
+    line-height: 1.4;
+}
+
+.cis-planet-access-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.cis-planet-access-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.72rem;
+    color: rgba(192, 207, 224, 0.55);
+    cursor: pointer;
+    padding: 3px 8px;
+    border: 1px solid rgba(229, 57, 53, 0.1);
+    border-radius: 1px;
+    background: rgba(0, 0, 0, 0.2);
+    transition: background 0.15s;
+}
+
+.cis-planet-access-item:hover { background: rgba(183, 28, 28, 0.1); }
+.cis-planet-access-item input[type="checkbox"] { accent-color: #e53935; cursor: pointer; }
+
+/* Admin instant-move bar */
+.ft-instant-prog-wrap {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(229, 57, 53, 0.1);
+}
+
+.ft-instant-prog-label {
+    color: #e53935;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    margin-bottom: 7px;
+}
+
+.ft-instant-prog-track {
+    height: 8px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 1px;
+    overflow: hidden;
+}
+
+.ft-instant-prog-fill {
+    height: 100%;
+    border-radius: 1px;
+    transition: width 0.12s linear, background 0.3s ease;
+}
+
+/* Modal input label helper */
+.cis-input-label {
+    color: rgba(192, 207, 224, 0.45);
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    margin-top: 6px;
+    display: block;
+}
