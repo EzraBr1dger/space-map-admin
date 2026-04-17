@@ -30,7 +30,7 @@ const authenticateToken = async (req, res, next) => {
 };
 
 const requireAdmin = (req, res, next) => {
-    if (!req.user || req.user.role !== 'admin') {
+    if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'owner')) {
         return res.status(403).json({ error: 'Admin access required' });
     }
     next();
@@ -44,7 +44,7 @@ const requireAdmiral = (req, res, next) => {
 };
 
 const requireAdmiralOrAdmin = (req, res, next) => {
-    if (!req.user || (req.user.role !== 'admiral' && req.user.role !== 'admin')) {
+    if (!req.user || (req.user.role !== 'admiral' && req.user.role !== 'admin' && req.user.role !== 'owner')) {
         return res.status(403).json({ error: 'Admiral or Admin access required' });
     }
     next();
