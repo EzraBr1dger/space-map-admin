@@ -7,6 +7,7 @@ import AnnouncementsTab from '../components/AnnouncementsTab';
 import ActionsTab from '../components/ActionsTab';
 import FleetTab from '../components/FleetTab';
 import CISFleetTab from '../components/CISFleetTab';
+import OwnerPanel from './OwnerPanel';
 import './Dashboard.css';
 
 function Dashboard() {
@@ -16,13 +17,12 @@ function Dashboard() {
     const { user, logout } = useAuth();
 
     useEffect(() => {
-        // If user is admiral, set fleet tab as default
         if (user?.role === 'admiral') {
             setActiveTab('fleet');
         }
         
         loadStats();
-        const interval = setInterval(loadStats, 30000); // Refresh every 30s
+        const interval = setInterval(loadStats, 30000);
         return () => clearInterval(interval);
     }, [user]);
 
@@ -37,14 +37,13 @@ function Dashboard() {
         }
     };
 
-    // Admiral sees different dashboard
     if (user?.role === 'admiral') {
         return (
             <div className="dashboard">
                 <div className="container">
                     <div className="navbar">
                         <div className="user-info">
-                            Welcome, Admiral <span>{user?.username}</span>
+                            Welcome, Admiral <span>{user?.email}</span>
                         </div>
                         <button className="logout-btn" onClick={logout}>Logout</button>
                     </div>
@@ -60,7 +59,6 @@ function Dashboard() {
         );
     }
 
-    // Admin sees full dashboard
     if (loading) return <div className="loading">Loading statistics...</div>;
     if (!stats) return <div className="loading">No data available</div>;
 
@@ -69,7 +67,7 @@ function Dashboard() {
             <div className="container">
                 <div className="navbar">
                     <div className="user-info">
-                        Welcome, <span>{user?.username}</span>
+                        Welcome, <span>{user?.email}</span>
                     </div>
                     <button className="logout-btn" onClick={logout}>Logout</button>
                 </div>
@@ -150,6 +148,14 @@ function Dashboard() {
                         >
                             Announcements
                         </button>
+                        {user?.role === 'owner' && (
+                            <button 
+                                className={`tab ${activeTab === 'owner' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('owner')}
+                            >
+                                Manage Users
+                            </button>
+                        )}
                     </div>
 
                     <div className="tab-content">
@@ -159,6 +165,7 @@ function Dashboard() {
                         {activeTab === 'actions' && <ActionsTab />}
                         {activeTab === 'announcements' && <AnnouncementsTab />}
                         {activeTab === 'cisfleet' && <CISFleetTab />}
+                        {activeTab === 'owner' && <OwnerPanel />}
                     </div>
                 </div>
             </div>
@@ -188,4 +195,4 @@ function formatNumber(num) {
     return new Intl.NumberFormat().format(num);
 }
 
-export default Dashboard; 
+export default Dashboard;
