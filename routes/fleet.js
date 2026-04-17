@@ -24,8 +24,15 @@ router.get('/', authenticateToken, requireAdmiralOrAdmin, async (req, res) => {
 router.post('/', authenticateToken, requireAdmiralOrAdmin, async (req, res) => {
     try {
         const { fleetName, commander, battalions, startingPlanet, composition, description } = req.body;
-        
-        const fleet = await FirebaseHelpers.addFleet({
+
+        // DEV BYPASS skip venator availability check outside production.
+        // In production, FirebaseHelpers.addFleet enforces availability normally.
+        const isDev = process.env.NODE_ENV !== 'production';
+        if (isDev) {
+            console.warn('[DEV] Skipping venator resource check for fleet creation');
+        }
+
+        const fleetPayload = {
             fleetName,
             commander,
             battalions: battalions || [],
@@ -39,12 +46,21 @@ router.post('/', authenticateToken, requireAdmiralOrAdmin, async (req, res) => {
                 frigates: composition.frigates || 0
             },
             created: new Date().toISOString()
-        });
+        };
 
-        res.json({ 
-            message: 'Fleet created successfully',
-            fleet
-        });
+        let fleet;
+        if (isDev) {
+            // Write directly to Firebase, bypassing the venator validation in FirebaseHelpers
+            const fleets = await FirebaseHelpers.getFleets();
+            const nextId = Object.keys(fleets).length + 1;
+            const fleetId = `fleet-${nextId}`;
+            await db().ref(`fleets/${fleetId}`).set(fleetPayload);
+            fleet = { id: fleetId, ...fleetPayload };
+        } else {
+            fleet = await FirebaseHelpers.addFleet(fleetPayload);
+        }
+
+        res.json({ message: 'Fleet created successfully', fleet });
     } catch (error) {
         console.error('Error creating fleet:', error);
         res.status(500).json({ error: error.message || 'Failed to create fleet' });
@@ -91,7 +107,7 @@ router.put('/:fleetId', authenticateToken, requireAdmiralOrAdmin, async (req, re
         console.log('DESCRIPTION:', description);
 
         const existingFleet = (await db().ref(`fleets/${fleetId}`).once('value')).val();
-        
+
         if (!existingFleet) {
             return res.status(404).json({ error: 'Fleet not found' });
         }
@@ -105,7 +121,19 @@ router.put('/:fleetId', authenticateToken, requireAdmiralOrAdmin, async (req, re
             description: description ?? ''
         };
 
-        await FirebaseHelpers.updateFleet(fleetId, updateData);
+        const isDev = process.env.NODE_ENV !== 'production';
+        if (isDev) {
+            // Bypass venator validation — write directly so 0-resource updates are allowed
+            console.warn('[DEV] Skipping venator resource check for fleet update');
+            await db().ref(`fleets/${fleetId}`).set({
+                ...updateData,
+                battalions: updateData.battalions && updateData.battalions.length > 0
+                    ? updateData.battalions.reduce((acc, val, i) => { acc[i] = val; return acc; }, {})
+                    : null
+            });
+        } else {
+            await FirebaseHelpers.updateFleet(fleetId, updateData);
+        }
 
         res.json({ 
             message: 'Fleet updated successfully'

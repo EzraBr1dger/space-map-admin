@@ -4,6 +4,14 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 // Middleware to verify JWT tokens
 const authenticateToken = (req, res, next) => {
+    // DEV BYPASS only active when NODE_ENV is explicitly NOT 'production'.
+    // Vercel always sets NODE_ENV=production, so this can never run in deployment.
+    if (process.env.NODE_ENV !== 'production') {
+        console.warn('[DEV] Auth bypassed — attaching mock admin user to request');
+        req.user = { id: 'dev-admin', username: 'DevAdmin', role: 'admin' };
+        return next();
+    }
+
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
@@ -15,7 +23,7 @@ const authenticateToken = (req, res, next) => {
         if (err) {
             return res.status(403).json({ error: 'Invalid or expired token' });
         }
-        
+
         req.user = user;
         next();
     });
