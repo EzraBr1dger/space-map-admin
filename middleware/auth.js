@@ -78,5 +78,4 @@ module.exports = {
     requireAdmiralOrAdmin,
     generateToken,
     verifyToken,
-    JWT_SECRET
 };
