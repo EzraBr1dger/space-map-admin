@@ -1,11 +1,16 @@
 const jwt = require('jsonwebtoken');
 
+
+
 const JWT_SECRET = process.env.JWT_SECRET;
+
+
 
 // Middleware to verify JWT tokens
 const authenticateToken = (req, res, next) => {
-    // DEV BYPASS only active when NODE_ENV is explicitly NOT 'production'.
-    // Vercel always sets NODE_ENV=production, so this can never run in deployment.
+    console.log('NODE_ENV:', process.env.NODE_ENV);
+    console.log('JWT_SECRET set:', !!process.env.JWT_SECRET);
+    
     if (process.env.NODE_ENV !== 'production') {
         console.warn('[DEV] Auth bypassed — attaching mock admin user to request');
         req.user = { id: 'dev-admin', username: 'DevAdmin', role: 'admin' };
