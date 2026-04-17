@@ -9,7 +9,7 @@ const users = [
     {
         id: 1,
         username: 'LoreTeamCW:P',
-        password: '$2a$10$3SASlWmQiLp1pi9N/s1eF.zD2TDveao0hhV11WcheH221d3uvhZx2',
+        password: '$2a$10$6DDQ4tVHX2pTd1.T08iCKeqTfBYHwk/LcuN3x6QGK1wvZ7ac2LoO2',
         role: 'admin'
     },
     {
