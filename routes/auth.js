@@ -1,163 +1,35 @@
 const express = require('express');
-const bcrypt = require('bcryptjs');
-const { generateToken, verifyToken, authenticateToken } = require('../middleware/auth');
+const { admin } = require('../config/firebase');
 
 const router = express.Router();
 
-// Simple in-memory user store 
-const users = [
-    {
-        id: 1,
-        username: 'LoreTeamCW:P',
-        password: '$2a$10$6DDQ4tVHX2pTd1.T08iCKeqTfBYHwk/LcuN3x6QGK1wvZ7ac2LoO2',
-        role: 'admin'
-    },
-    {
-        id: 2,
-        username: 'Admiral',
-        password: '$2a$10$DHCKT/R.td2Q/JIpEGcGmO0NJwgVIcPIVtJoAVVcooGYCXXc4E3tW', 
-        role: 'admiral'
-    }
-];
-
-// Login route
-router.post('/login', async (req, res) => {
+router.get('/verify', async (req, res) => {
     try {
-        const { username, password } = req.body;
+        const authHeader = req.headers['authorization'];
+        const token = authHeader && authHeader.split(' ')[1];
 
-        if (!username || !password) {
-            return res.status(400).json({ error: 'Username and password required' });
+        if (!token) {
+            return res.status(401).json({ error: 'No token provided' });
         }
 
-        // Find user
-        const user = users.find(u => u.username === username);
-        if (!user) {
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
-
-        // Check password
-        const validPassword = await bcrypt.compare(password, user.password);
-        if (!validPassword) {
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
-
-        // Generate token
-        const token = generateToken(user);
+        const decoded = await admin.auth().verifyIdToken(token);
+        const role = decoded.role || 'viewer';
 
         res.json({
-            message: 'Login successful',
-            token,
+            valid: true,
             user: {
-                id: user.id,
-                username: user.username,
-                role: user.role
+                id: decoded.uid,
+                email: decoded.email,
+                role
             }
         });
-
-        console.log(`✅ User ${username} logged in successfully`);
     } catch (error) {
-        console.error('Login error:', error);
-        res.status(500).json({ error: 'Login failed' });
+        res.status(401).json({ error: 'Invalid token' });
     }
 });
 
-// Register route (for adding new users)
-router.post('/register', authenticateToken, async (req, res) => {
-    try {
-        const { username, password, role = 'user' } = req.body;
-
-        // Only admins can create new users
-        if (req.user.role !== 'admin') {
-            return res.status(403).json({ error: 'Admin access required' });
-        }
-
-        if (!username || !password) {
-            return res.status(400).json({ error: 'Username and password required' });
-        }
-
-        // Check if user already exists
-        if (users.find(u => u.username === username)) {
-            return res.status(409).json({ error: 'Username already exists' });
-        }
-
-        // Hash password
-        const hashedPassword = await bcrypt.hash(password, 10);
-
-        // Create new user
-        const newUser = {
-            id: users.length + 1,
-            username,
-            password: hashedPassword,
-            role
-        };
-
-        users.push(newUser);
-
-        res.status(201).json({
-            message: 'User created successfully',
-            user: {
-                id: newUser.id,
-                username: newUser.username,
-                role: newUser.role
-            }
-        });
-
-        console.log(`✅ New user ${username} created by ${req.user.username}`);
-    } catch (error) {
-        console.error('Registration error:', error);
-        res.status(500).json({ error: 'Registration failed' });
-    }
-});
-
-// Verify token route
-router.get('/verify', authenticateToken, (req, res) => {
-    res.json({
-        valid: true,
-        user: {
-            id: req.user.id,
-            username: req.user.username,
-            role: req.user.role
-        }
-    });
-});
-
-// Logout route (client-side handles token removal)
-router.post('/logout', authenticateToken, (req, res) => {
-    console.log(`✅ User ${req.user.username} logged out`);
+router.post('/logout', (req, res) => {
     res.json({ message: 'Logout successful' });
-});
-
-// Change password route
-router.post('/change-password', authenticateToken, async (req, res) => {
-    try {
-        const { currentPassword, newPassword } = req.body;
-
-        if (!currentPassword || !newPassword) {
-            return res.status(400).json({ error: 'Current password and new password required' });
-        }
-
-        // Find user
-        const user = users.find(u => u.id === req.user.id);
-        if (!user) {
-            return res.status(404).json({ error: 'User not found' });
-        }
-
-        // Verify current password
-        const validPassword = await bcrypt.compare(currentPassword, user.password);
-        if (!validPassword) {
-            return res.status(401).json({ error: 'Current password is incorrect' });
-        }
-
-        // Hash new password
-        const hashedNewPassword = await bcrypt.hash(newPassword, 10);
-        user.password = hashedNewPassword;
-
-        res.json({ message: 'Password changed successfully' });
-        console.log(`✅ Password changed for user ${user.username}`);
-    } catch (error) {
-        console.error('Password change error:', error);
-        res.status(500).json({ error: 'Password change failed' });
-    }
 });
 
 module.exports = router;

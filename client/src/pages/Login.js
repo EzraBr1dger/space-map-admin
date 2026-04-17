@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import './Login.css';
 
 function Login() {
-    const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const { login } = useAuth();
@@ -15,10 +15,10 @@ function Login() {
         setError('');
         
         try {
-            await login(username, password);
+            await login(email, password);
             navigate('/dashboard');
         } catch (error) {
-            setError(error.response?.data?.error || 'Login failed');
+            setError('Invalid email or password');
         }
     };
 
@@ -28,11 +28,11 @@ function Login() {
                 <h2>Admin Login</h2>
                 <form onSubmit={handleSubmit}>
                     <div className="form-group">
-                        <label>Username</label>
+                        <label>Email</label>
                         <input
-                            type="text"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
                             required
                         />
                     </div>

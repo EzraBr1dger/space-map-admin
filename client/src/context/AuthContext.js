@@ -1,23 +1,25 @@
 import { createContext, useState, useContext, useEffect } from 'react';
+import { initializeApp } from 'firebase/app';
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 import api from '../services/api';
 
+const firebaseConfig = {
+    apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+    authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+    projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
 const AuthContext = createContext();
-
 export const useAuth = () => useContext(AuthContext);
-
-// DEV BYPASS only activates when ALL three conditions are true:
-//   1. NODE_ENV is 'development' (npm start, never npm run build)
-//   2. REACT_APP_DEV_BYPASS=true is set in client/.env.development.local
-//   3. That .env.development.local file is git-ignored by CRA
-// Production builds are completely unaffected.
 
 const IS_DEV_BYPASS =
     process.env.NODE_ENV === 'development' &&
     process.env.REACT_APP_DEV_BYPASS === 'true';
 
-// Role is 'admiral' so Dashboard skips the /stats call and renders FleetTab directly.
-// Change to 'admin' only if you need to test the full admin dashboard locally.
-const DEV_USER = { id: 'dev-admiral', username: 'DevAdmiral', role: 'admiral' };
+const DEV_USER = { id: 'dev-admiral', email: 'dev@admin.com', role: 'admiral' };
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
@@ -29,30 +31,38 @@ export const AuthProvider = ({ children }) => {
             setLoading(false);
             return;
         }
-        verifyToken();
+
+        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+            if (firebaseUser) {
+                const token = await firebaseUser.getIdToken();
+                localStorage.setItem('authToken', token);
+                try {
+                    const { data } = await api.get('/auth/verify');
+                    setUser(data.user);
+                } catch {
+                    setUser(null);
+                }
+            } else {
+                localStorage.removeItem('authToken');
+                setUser(null);
+            }
+            setLoading(false);
+        });
+
+        return unsubscribe;
     }, []);
 
-    const verifyToken = async () => {
-        const token = localStorage.getItem('authToken');
-        if (token) {
-            try {
-                const { data } = await api.get('/auth/verify');
-                setUser(data.user);
-            } catch (error) {
-                localStorage.removeItem('authToken');
-            }
-        }
-        setLoading(false);
-    };
-
-    const login = async (username, password) => {
-        const { data } = await api.post('/auth/login', { username, password });
-        localStorage.setItem('authToken', data.token);
+    const login = async (email, password) => {
+        const { user: firebaseUser } = await signInWithEmailAndPassword(auth, email, password);
+        const token = await firebaseUser.getIdToken();
+        localStorage.setItem('authToken', token);
+        const { data } = await api.get('/auth/verify');
         setUser(data.user);
         return data;
     };
 
-    const logout = () => {
+    const logout = async () => {
+        await signOut(auth);
         localStorage.removeItem('authToken');
         setUser(null);
     };
