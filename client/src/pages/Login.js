@@ -13,7 +13,6 @@ function Login() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
-        
         try {
             await login(email, password);
             navigate('/dashboard');
@@ -47,6 +46,13 @@ function Login() {
                     </div>
                     {error && <div className="error">{error}</div>}
                     <button type="submit">Login</button>
+                    <button
+                        type="button"
+                        onClick={() => navigate('/register')}
+                        style={{ marginTop: '10px', background: 'transparent', border: '1px solid #64ffda', color: '#64ffda' }}
+                    >
+                        Register
+                    </button>
                 </form>
             </div>
         </div>
