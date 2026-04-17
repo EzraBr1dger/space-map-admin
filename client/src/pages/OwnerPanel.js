@@ -34,6 +34,16 @@ function OwnerPanel() {
         }
     };
 
+    const cleanupLogs = async () => {
+        try {
+            const { data } = await api.delete('/auth/logs/cleanup');
+            setMessage(data.message);
+            fetchLogs();
+        } catch {
+            setError('Failed to cleanup logs');
+        }
+    };
+
     const assignRole = async (uid, role) => {
         try {
             await api.post('/auth/assign-role', { uid, role });
@@ -132,9 +142,12 @@ function OwnerPanel() {
 
             {activeSection === 'logs' && (
                 <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                    <h2 style={{ color: '#64ffda', padding: '20px', margin: 0, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                        Activity Logs ({logs.length})
-                    </h2>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                        <h2 style={{ color: '#64ffda', margin: 0 }}>Activity Logs ({logs.length})</h2>
+                        <button onClick={cleanupLogs} style={{ width: 'auto', padding: '6px 12px', fontSize: '13px', background: 'linear-gradient(135deg, #f44336, #d32f2f)' }}>
+                            Clear Old Logs
+                        </button>
+                    </div>
                     {logs.length === 0 ? (
                         <p style={{ color: '#888', padding: '20px' }}>No logs yet</p>
                     ) : (

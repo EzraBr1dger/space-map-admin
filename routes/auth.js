@@ -69,6 +69,25 @@ router.get('/logs', authenticateToken, async (req, res) => {
     }
 });
 
+router.delete('/logs/cleanup', authenticateToken, async (req, res) => {
+    if (req.user.role !== 'owner') {
+        return res.status(403).json({ error: 'Owner access required' });
+    }
+    try {
+        const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
+        const snapshot = await admin.database().ref('logs').orderByKey().endAt(String(thirtyDaysAgo)).once('value');
+        const old = snapshot.val();
+        if (old) {
+            const deletes = {};
+            Object.keys(old).forEach(k => deletes[k] = null);
+            await admin.database().ref('logs').update(deletes);
+        }
+        res.json({ message: `Cleared ${Object.keys(old || {}).length} old logs` });
+    } catch {
+        res.status(500).json({ error: 'Failed to cleanup logs' });
+    }
+});
+
 router.post('/logout', (req, res) => {
     res.json({ message: 'Logout successful' });
 });
