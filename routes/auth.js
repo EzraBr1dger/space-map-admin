@@ -9,13 +9,13 @@ const users = [
     {
         id: 1,
         username: 'LoreTeamCW:P',
-        password: '$2a$10$iKPIV.wytj4HfAo9vjBpdOPvYXup.pTPyRa2UDkuXUUqtigbkT3w2',
+        password: '$2a$10$3SASlWmQiLp1pi9N/s1eF.zD2TDveao0hhV11WcheH221d3uvhZx2',
         role: 'admin'
     },
     {
         id: 2,
         username: 'Admiral',
-        password: '$2a$10$yKNM/NpQAmnIU44748RmEuwysaSRJiyhMnNnD687aiqwDEw.AgPkS', // Generate with: bcrypt.hash('admiralpass', 10)
+        password: '$2a$10$DHCKT/R.td2Q/JIpEGcGmO0NJwgVIcPIVtJoAVVcooGYCXXc4E3tW', 
         role: 'admiral'
     }
 ];
