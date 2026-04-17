@@ -55,6 +55,20 @@ router.post('/assign-role', authenticateToken, async (req, res) => {
     }
 });
 
+router.get('/logs', authenticateToken, async (req, res) => {
+    if (req.user.role !== 'owner') {
+        return res.status(403).json({ error: 'Owner access required' });
+    }
+    try {
+        const snapshot = await admin.database().ref('logs').orderByKey().limitToLast(100).once('value');
+        const logs = snapshot.val() || {};
+        const logsArray = Object.values(logs).reverse();
+        res.json({ logs: logsArray });
+    } catch {
+        res.status(500).json({ error: 'Failed to fetch logs' });
+    }
+});
+
 router.post('/logout', (req, res) => {
     res.json({ message: 'Logout successful' });
 });

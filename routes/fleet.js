@@ -95,14 +95,11 @@ router.post('/move', authenticateToken, requireAdmiralOrAdmin, async (req, res) 
     }
 });
 
-// Update fleet
 router.put('/:fleetId', authenticateToken, requireAdmiralOrAdmin, async (req, res) => {
     try {
         const { fleetId } = req.params;
         const { fleetName, commander, battalions, composition, description } = req.body;
 
-
-        
         console.log('UPDATE FLEET BODY:', req.body);
         console.log('DESCRIPTION:', description);
 
@@ -123,7 +120,6 @@ router.put('/:fleetId', authenticateToken, requireAdmiralOrAdmin, async (req, re
 
         const isDev = process.env.NODE_ENV !== 'production';
         if (isDev) {
-            // Bypass venator validation — write directly so 0-resource updates are allowed
             console.warn('[DEV] Skipping venator resource check for fleet update');
             await db().ref(`fleets/${fleetId}`).set({
                 ...updateData,
@@ -135,9 +131,20 @@ router.put('/:fleetId', authenticateToken, requireAdmiralOrAdmin, async (req, re
             await FirebaseHelpers.updateFleet(fleetId, updateData);
         }
 
-        res.json({ 
-            message: 'Fleet updated successfully'
-        });
+        // Log name change
+        if (fleetName && fleetName !== existingFleet.fleetName) {
+            await db().ref(`logs/${Date.now()}`).set({
+                type: 'fleet_rename',
+                by: req.user.email,
+                role: req.user.role,
+                from: existingFleet.fleetName,
+                to: fleetName,
+                target: fleetId,
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        res.json({ message: 'Fleet updated successfully' });
     } catch (error) {
         console.error('Error updating fleet:', error);
         res.status(500).json({ error: error.message || 'Failed to update fleet' });

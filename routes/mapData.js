@@ -30,44 +30,51 @@ router.get('/', authenticateToken, async (req, res) => {
     }
 });
 
-// Update planet map data
 router.put('/planet/:planetName', authenticateToken, requireAdmin, async (req, res) => {
     try {
         const { planetName } = req.params;
         const planetMapData = req.body;
 
-        // Validate required fields
         if (!planetMapData.faction) {
-            return res.status(400).json({ 
-                error: 'Planet must have faction' 
-            });
+            return res.status(400).json({ error: 'Planet must have faction' });
         }
 
-        // ✅ ADD THIS: Convert reputation to efficiency before saving
         if (planetMapData.reputation !== undefined) {
             planetMapData.efficiency = planetMapData.reputation;
-            delete planetMapData.reputation; // Remove reputation field
+            delete planetMapData.reputation;
         }
 
         const currentMapData = await FirebaseHelpers.getMapData() || { planets: {}, sectors: {} };
-        
-        // Update planet in map data
+        const existingPlanet = currentMapData.planets[planetName] || {};
+
         currentMapData.planets[planetName] = {
-            ...currentMapData.planets[planetName],
+            ...existingPlanet,
             ...planetMapData,
             lastModified: new Date().toISOString()
         };
-        
-        currentMapData.lastUpdate = new Date().toISOString();
 
+        currentMapData.lastUpdate = new Date().toISOString();
         await FirebaseHelpers.updateMapData(currentMapData);
 
-        res.json({ 
+        // Log name change if planet name changed
+        if (planetMapData.name && planetMapData.name !== existingPlanet.name) {
+            await db().ref(`logs/${Date.now()}`).set({
+                type: 'planet_rename',
+                by: req.user.email,
+                role: req.user.role,
+                from: existingPlanet.name || planetName,
+                to: planetMapData.name,
+                target: planetName,
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        res.json({
             message: `Planet ${planetName} map data updated successfully`,
             planet: currentMapData.planets[planetName]
         });
 
-        console.log(`✅ Planet ${planetName} map data updated by ${req.user.username}`);
+        console.log(`✅ Planet ${planetName} map data updated by ${req.user.email}`);
     } catch (error) {
         console.error(`Error updating planet map data ${req.params.planetName}:`, error);
         res.status(500).json({ error: 'Failed to update planet map data' });
