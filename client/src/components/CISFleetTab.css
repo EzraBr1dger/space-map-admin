@@ -299,28 +299,28 @@
     flex-shrink: 0;
 }
 
-/*  SMALL BUTTONS  always visible, never shrink  */
+/*  SMALL BUTTONS always visible, never shrink  */
 .cis-theme .ft-row-actions {
     display: flex;
-    gap: 6px;
+    gap: 4px;
     justify-content: flex-end;
-    margin-left: auto;
     flex-shrink: 0;
 }
 
 .cis-theme .ft-btn-sm {
-    padding: 4px 9px;
+    padding: 2px 6px;
     border: none;
     border-radius: 1px;
-    font-size: 0.63rem;
+    font-size: 0.56rem;
     font-weight: 700;
-    letter-spacing: 1px;
+    letter-spacing: 0.5px;
     cursor: pointer;
     text-transform: uppercase;
     font-family: 'Courier New', Courier, monospace;
     transition: opacity 0.15s;
     white-space: nowrap;
     flex-shrink: 0;
+    line-height: 1.6;
 }
 
 .cis-theme .ft-btn-sm:hover { opacity: 0.75; }
@@ -375,7 +375,7 @@
 
 .cis-theme .cis-card-transit { border-top-color: #ff9800 !important; }
 
-/* Card header — two-row layout, name never shares a line with buttons */
+/* Card header two-row layout, name never shares a line with buttons */
 .cis-theme .cis-card-header {
     display: flex;
     flex-direction: column;
@@ -385,7 +385,7 @@
     border-bottom: 1px solid rgba(229, 57, 53, 0.09);
 }
 
-/* Row 1: checkbox + fleet name  full width */
+/* Row 1: checkbox  fleet name full width */
 .cis-theme .cis-header-row1 {
     display: flex;
     align-items: center;
@@ -405,7 +405,7 @@
     min-width: 0;
 }
 
-/* Row 2: group tag left, buttons right  completely separate from name */
+/* Row 2: group tag left, buttons right completely separate from name */
 .cis-theme .cis-header-row2 {
     display: flex;
     align-items: center;
@@ -414,7 +414,7 @@
     min-height: 24px;
 }
 
-/* Left side of row 2  holds the group tag if present */
+/* Left side of row 2 holds the group tag if present */
 .cis-theme .cis-header-tag-area {
     display: flex;
     align-items: center;
@@ -647,7 +647,7 @@
     display: block;
 }
 
-/* Manage Assets  ship blocks */
+/* Manage Assets — ship blocks */
 .cis-theme .cis-asset-block {
     background: rgba(0, 0, 0, 0.25);
     border: 1px solid rgba(229, 57, 53, 0.1);
