@@ -299,7 +299,7 @@
     flex-shrink: 0;
 }
 
-/*  SMALL BUTTONS  */
+/*  SMALL BUTTONS  always visible, never shrink  */
 .cis-theme .ft-row-actions {
     display: flex;
     gap: 6px;
@@ -375,36 +375,51 @@
 
 .cis-theme .cis-card-transit { border-top-color: #ff9800 !important; }
 
-/* Card header  buttons always visible, name truncates */
+/* Card header — two-row layout, name never shares a line with buttons */
 .cis-theme .cis-card-header {
     display: flex;
-    align-items: center;
+    flex-direction: column;
     gap: 8px;
-    padding: 10px 14px;
+    padding: 10px 14px 10px;
     background: rgba(0, 0, 0, 0.35);
     border-bottom: 1px solid rgba(229, 57, 53, 0.09);
 }
 
-/* Name + group tag wrapper  takes all available space, clips internally */
-.cis-theme .cis-name-area {
-    flex: 1;
-    min-width: 0;
+/* Row 1: checkbox + fleet name  full width */
+.cis-theme .cis-header-row1 {
     display: flex;
     align-items: center;
-    gap: 6px;
-    overflow: hidden;
+    gap: 8px;
+    width: 100%;
 }
 
-/* Fleet name truncates within name-area */
+/* Fleet name gets the full row, wraps naturally for long names */
 .cis-theme .cis-fleet-name {
     color: #c0cfe0;
     font-weight: 700;
     font-size: 0.88rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    line-height: 1.3;
+    flex: 1;
     min-width: 0;
-    flex-shrink: 1;
+}
+
+/* Row 2: group tag left, buttons right  completely separate from name */
+.cis-theme .cis-header-row2 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 24px;
+}
+
+/* Left side of row 2  holds the group tag if present */
+.cis-theme .cis-header-tag-area {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
 }
 
 .cis-theme .cis-group-tag {
