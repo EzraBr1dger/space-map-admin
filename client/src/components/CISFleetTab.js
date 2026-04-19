@@ -430,39 +430,45 @@ function CISFleetTab() {
                                     key={id}
                                     className={`cis-fleet-card${selectedFleets.includes(id) ? ' cis-card-selected' : ''}${isTransit ? ' cis-card-transit' : ''}`}
                                 >
-                                    {/*  CARD HEADER  */}
+                                    {/*  CARD HEADER  two rows  */}
                                     <div className="cis-card-header">
-                                        <input
-                                            type="checkbox"
-                                            className="ft-checkbox"
-                                            checked={selectedFleets.includes(id)}
-                                            onChange={() => toggleSelect(id)}
-                                        />
-                                        <div className="cis-name-area">
+                                        {/* Row 1: checkbox + fleet name — full width, never shares space with buttons */}
+                                        <div className="cis-header-row1">
+                                            <input
+                                                type="checkbox"
+                                                className="ft-checkbox"
+                                                checked={selectedFleets.includes(id)}
+                                                onChange={() => toggleSelect(id)}
+                                            />
                                             <span className="cis-fleet-name">{fleet.fleetName || id}</span>
-                                            {fleet.group && fleet.group !== 'Unassigned' && (
-                                                <span className="cis-group-tag">{fleet.group}</span>
-                                            )}
                                         </div>
-                                        <div className="ft-row-actions">
-                                            <button
-                                                onClick={() => setViewingFleet({ id, ...fleet })}
-                                                className="ft-btn-sm cis-bsm-view"
-                                            >VIEW</button>
-                                            {!isTransit && (
+                                        {/* Row 2: group tag left, action buttons right */}
+                                        <div className="cis-header-row2">
+                                            <div className="cis-header-tag-area">
+                                                {fleet.group && fleet.group !== 'Unassigned' && (
+                                                    <span className="cis-group-tag">{fleet.group}</span>
+                                                )}
+                                            </div>
+                                            <div className="ft-row-actions">
                                                 <button
-                                                    onClick={() => { deselectAll(); setSelectedFleets([id]); }}
-                                                    className="ft-btn-sm cis-bsm-move"
-                                                >MOVE</button>
-                                            )}
-                                            <button
-                                                onClick={() => { setEditTab('info'); setEditingFleet({ id, ...fleet }); }}
-                                                className="ft-btn-sm ft-bsm-edit"
-                                            >EDIT</button>
-                                            <button
-                                                onClick={() => deleteFleet(id)}
-                                                className="ft-btn-sm ft-bsm-del"
-                                            >DEL</button>
+                                                    onClick={() => setViewingFleet({ id, ...fleet })}
+                                                    className="ft-btn-sm cis-bsm-view"
+                                                >VIEW</button>
+                                                {!isTransit && (
+                                                    <button
+                                                        onClick={() => { deselectAll(); setSelectedFleets([id]); }}
+                                                        className="ft-btn-sm cis-bsm-move"
+                                                    >MOVE</button>
+                                                )}
+                                                <button
+                                                    onClick={() => { setEditTab('info'); setEditingFleet({ id, ...fleet }); }}
+                                                    className="ft-btn-sm ft-bsm-edit"
+                                                >EDIT</button>
+                                                <button
+                                                    onClick={() => deleteFleet(id)}
+                                                    className="ft-btn-sm ft-bsm-del"
+                                                >DEL</button>
+                                            </div>
                                         </div>
                                     </div>
 
