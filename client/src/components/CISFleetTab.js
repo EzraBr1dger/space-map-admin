@@ -27,6 +27,7 @@ function CISFleetTab() {
     const [planetAccess, setPlanetAccess] = useState({});
     const [now, setNow] = useState(Date.now());
     const [editTab, setEditTab] = useState('info');
+    const [viewingFleet, setViewingFleet] = useState(null);
 
     const [newFleet, setNewFleet] = useState({
         fleetName: '',
@@ -103,7 +104,7 @@ function CISFleetTab() {
     const selectAll   = () => setSelectedFleets(Object.keys(fleets));
     const deselectAll = () => setSelectedFleets([]);
 
-    // Transit progress — driven by real backend timestamps
+    // Transit progress driven by real backend timestamps
     const getTransitProgress = (fleet) => {
         if (!fleet.travelingTo) return 0;
         if (!fleet.arrivalDate) return 50;
@@ -116,7 +117,7 @@ function CISFleetTab() {
         return Math.min(99, Math.max(1, Math.round(((now - departure) / total) * 100)));
     };
 
-    // Admin bar: 0-25% red → 25-50% orange → 50-75% yellow → 75-100% green
+    // Admin bar: 0-25% red 25-50% orange 50-75% yellow 75-100% green
     const getInstantBarColor = (pct) => {
         if (pct < 25) return '#f44336';
         if (pct < 50) return '#ff9800';
@@ -437,11 +438,17 @@ function CISFleetTab() {
                                             checked={selectedFleets.includes(id)}
                                             onChange={() => toggleSelect(id)}
                                         />
-                                        <span className="cis-fleet-name">{fleet.fleetName || id}</span>
-                                        {fleet.group && fleet.group !== 'Unassigned' && (
-                                            <span className="cis-group-tag">{fleet.group}</span>
-                                        )}
+                                        <div className="cis-name-area">
+                                            <span className="cis-fleet-name">{fleet.fleetName || id}</span>
+                                            {fleet.group && fleet.group !== 'Unassigned' && (
+                                                <span className="cis-group-tag">{fleet.group}</span>
+                                            )}
+                                        </div>
                                         <div className="ft-row-actions">
+                                            <button
+                                                onClick={() => setViewingFleet({ id, ...fleet })}
+                                                className="ft-btn-sm cis-bsm-view"
+                                            >VIEW</button>
                                             {!isTransit && (
                                                 <button
                                                     onClick={() => { deselectAll(); setSelectedFleets([id]); }}
@@ -648,6 +655,64 @@ function CISFleetTab() {
                                 </>
                             )}
 
+                        </div>
+                    </div>
+                );
+            })()}
+
+            {/*  VIEW FLEET MODAL  */}
+            {viewingFleet && (() => {
+                const vc = viewingFleet.composition || {};
+                const vParts = [];
+                if (vc.lucrehulks   > 0) vParts.push(`${vc.lucrehulks} Lucrehulk${vc.lucrehulks !== 1 ? 's' : ''}`);
+                if (vc.dreadnoughts > 0) vParts.push(`${vc.dreadnoughts} Dreadnought${vc.dreadnoughts !== 1 ? 's' : ''}`);
+                if (vc.munificents  > 0) vParts.push(`${vc.munificents} Munificent${vc.munificents !== 1 ? 's' : ''}`);
+                if (vc.providences  > 0) vParts.push(`${vc.providences} Providence${vc.providences !== 1 ? 's' : ''}`);
+                if (vc.frigates     > 0) vParts.push(`${vc.frigates} Frigate${vc.frigates !== 1 ? 's' : ''}`);
+                const vCompStr = vParts.length > 0 ? vParts.join(' · ') : '—';
+                const vTransit = !!viewingFleet.travelingTo;
+                const vPct = vTransit ? getTransitProgress(viewingFleet) : null;
+                return (
+                    <div className="cis-view-overlay" onClick={() => setViewingFleet(null)}>
+                        <div className="cis-view-panel" onClick={e => e.stopPropagation()}>
+                            <div className="cis-view-header">
+                                <div className="cis-view-title">
+                                    <span className="cis-view-fleet-name">{viewingFleet.fleetName || viewingFleet.id}</span>
+                                    {viewingFleet.group && viewingFleet.group !== 'Unassigned' && (
+                                        <span className="cis-group-tag">{viewingFleet.group}</span>
+                                    )}
+                                </div>
+                                <button className="cis-view-close" onClick={() => setViewingFleet(null)}>✕</button>
+                            </div>
+                            <div className="cis-view-body">
+                                {viewingFleet.commander && (
+                                    <div className="cis-view-section">
+                                        <div className="cis-view-label">Commander</div>
+                                        <div className="cis-view-value">{viewingFleet.commander}</div>
+                                    </div>
+                                )}
+                                <div className="cis-view-section">
+                                    <div className="cis-view-label">Location</div>
+                                    <div className={`cis-view-value${vTransit ? ' cis-field-transit' : ' cis-field-planet'}`}>
+                                        {vTransit ? `Hyperspace → ${viewingFleet.travelingTo}` : (viewingFleet.currentPlanet || '—')}
+                                    </div>
+                                    {vTransit && viewingFleet.arrivalDate && (
+                                        <div className="cis-view-eta">
+                                            ETA: {new Date(viewingFleet.arrivalDate).toLocaleString()} · {vPct}% complete
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="cis-view-section">
+                                    <div className="cis-view-label">Composition</div>
+                                    <div className="cis-view-value">{vCompStr}</div>
+                                </div>
+                                {viewingFleet.description && (
+                                    <div className="cis-view-section">
+                                        <div className="cis-view-label">Description</div>
+                                        <div className="cis-view-desc">{viewingFleet.description}</div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 );
