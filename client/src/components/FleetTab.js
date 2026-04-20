@@ -38,12 +38,12 @@ function FleetTab() {
     const [instantProgress, setInstantProgress] = useState(null);
     // { [fleetId]: { startTime, duration, payload, fleetName } }
     const [pendingAssignments, setPendingAssignments] = useState({});
-    // { [fleetId]: [{ startTime, duration }] } — multiple venators can be inbound per fleet
+    // { [fleetId]: [{ startTime, duration }] } multiple venators can be inbound per fleet
     const [pendingVenators, setPendingVenators] = useState({});
     // Stores setTimeout IDs so they can be cleared on unmount
     const assignmentTimersRef = useRef({});
     const venatorTimersRef = useRef({});
-    // 'info' | 'assets' — which tab is active in the edit modal
+    // 'info' | 'assets' which tab is active in the edit modal
     const [editTab, setEditTab] = useState('info');
     // quantity selected for venator add/remove actions in edit modal
     const [venatorQty, setVenatorQty] = useState(1);
@@ -169,7 +169,7 @@ function FleetTab() {
         if (selectedFleets.length === 0) { showMessage('error', 'No fleets selected'); return; }
         if (!destination) { showMessage('error', 'No destination selected'); return; }
 
-        // Capture values now — interval callbacks won't see updated state
+        // Capture values now interval callbacks won't see updated state
         const payload = { fleetIds: [...selectedFleets], destination, travelDays, instantMove };
 
         const doDispatch = async () => {
@@ -280,7 +280,7 @@ function FleetTab() {
             return;
         }
 
-        // Instant save — no battalion change, or fleet was previously unassigned
+        // Instant save no battalion change, or fleet was previously unassigned
         try {
             await api.put(`/fleet/${fleetId}`, payload);
             showMessage('success', 'Fleet updated successfully');
@@ -310,7 +310,7 @@ function FleetTab() {
     const totalAssets = venatorStats.total + frigateCount;
 
     // Uses the `now` state (updated every second) so React re-renders progress bars live.
-    // All math is based purely on real backend timestamps — no fake values.
+    // All math is based purely on real backend timestamps no fake values.
     const getTransitProgress = (fleet) => {
         if (!fleet.travelingTo) return 0;
         if (!fleet.arrivalDate) return 50;
@@ -446,10 +446,10 @@ function FleetTab() {
         return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
     };
 
-    // 14h normally; 10s with admin bypass — for venator inbound travel
+    // 14h normally; 10s with admin bypass for venator inbound travel
     const getVenatorTravelDuration = () => instantMove ? 10000 : 14 * 60 * 60 * 1000;
 
-    // Save only name/commander/description — does NOT touch battalions or composition
+    // Save only name/commander/description does NOT touch battalions or composition
     const saveFleetInfo = async () => {
         const fleetId = editingFleet.id;
         const currentFleet = fleets[fleetId];
@@ -537,7 +537,7 @@ function FleetTab() {
             return;
         }
 
-        // Delayed assignment — cancel any existing pending timer first
+        // Delayed assignment cancel any existing pending timer first
         if (assignmentTimersRef.current[fleetId]) clearTimeout(assignmentTimersRef.current[fleetId]);
         const duration = getBattalionAssignDuration();
         const label = instantMove ? '10s (admin)' : '20 min';
@@ -558,7 +558,7 @@ function FleetTab() {
         }, duration);
     };
 
-    // Remove a battalion from the current fleet — instant, no delay
+    // Remove a battalion from the current fleet instant, no delay
     const removeBattalion = async (battalion) => {
         const newBats = (editingFleet.battalions || []).filter(b => b !== battalion);
         setEditingFleet(prev => ({ ...prev, battalions: newBats }));
@@ -635,7 +635,7 @@ function FleetTab() {
         } : prev);
     };
 
-    // Remove one or more venators immediately — instant API call
+    // Remove one or more venators immediately instant API call
     const removeVenator = async (fleetId, qty = 1) => {
         const current = editingFleet?.composition?.venators || 0;
         if (current < qty) {
@@ -661,7 +661,7 @@ function FleetTab() {
     };
 
     // DEV/ADMIN: fast-forward all inbound venators for a fleet to arrive in 15s
-    // Does NOT bypass the arrival logic — just replaces the timers with a shorter duration.
+    // Does NOT bypass the arrival logic just replaces the timers with a shorter duration.
     const devFastForwardVenators = (fleetId) => {
         const current = pendingVenators[fleetId] || [];
         if (current.length === 0) return;
@@ -808,7 +808,17 @@ function FleetTab() {
                                     </span>
                                     <span className="ft-route-pct" style={{ color: barColor }}>{pct}%</span>
                                     {pct >= 100 && (
-                                        <button onClick={loadData} className="ft-btn-confirm">CONFIRM ARRIVAL</button>
+                                        <button
+                                            onClick={async () => {
+                                                try {
+                                                    await api.post('/fleet/confirm-arrival', { fleetIds: [id] });
+                                                    await loadData();
+                                                } catch (err) {
+                                                    showMessage('error', err.response?.data?.error || 'Arrival confirmation failed');
+                                                }
+                                            }}
+                                            className="ft-btn-confirm"
+                                        >CONFIRM ARRIVAL</button>
                                     )}
                                 </div>
                                 <div className="ft-prog-wrap">
@@ -1129,7 +1139,7 @@ function FleetTab() {
                                 >MANAGE ASSETS</button>
                             </div>
 
-                            {/*  FLEET INFO TAB  */}
+                            {/* ── FLEET INFO TAB ── */}
                             {editTab === 'info' && (
                                 <>
                                     <input className="ft-input" type="text" placeholder="Fleet Name"
@@ -1148,7 +1158,7 @@ function FleetTab() {
                                 </>
                             )}
 
-                            {/*  MANAGE ASSETS TAB  */}
+                            {/* ── MANAGE ASSETS TAB ── */}
                             {editTab === 'assets' && (
                                 <>
                                     {hasPending && (
@@ -1159,7 +1169,7 @@ function FleetTab() {
 
                                     <div className="ft-assets-grid">
 
-                                        {/*  LEFT COLUMN: Venators + Frigates  */}
+                                        {/* ── LEFT COLUMN: Venators + Frigates ── */}
                                         <div className="ft-assets-left">
 
                                             {/* VENATORS */}
@@ -1251,7 +1261,7 @@ function FleetTab() {
 
                                         </div>{/* end ft-assets-left */}
 
-                                        {/*  RIGHT COLUMN: Battalions  */}
+                                        {/* ── RIGHT COLUMN: Battalions ── */}
                                         <div className="ft-assets-right">
 
                                             {/* ASSIGNED BATTALIONS */}
@@ -1286,8 +1296,6 @@ function FleetTab() {
                                                             <button
                                                                 onClick={() => assignBattalion(bat, otherFleetId, otherFleetName)}
                                                                 className={`ft-btn-sm ft-btn-bat-full ${otherFleetId ? 'ft-bsm-reassign' : 'ft-bsm-assign'}`}
-                                                                disabled={hasPending}
-                                                                title={hasPending ? 'Assignment in progress' : ''}
                                                             >
                                                                 {otherFleetId
                                                                     ? `${bat} — REASSIGN (in ${otherFleetName})`

@@ -7,10 +7,13 @@ const router = express.Router();
 // Get all fleets + available venator count
 router.get('/', authenticateToken, requireAdmiralOrAdmin, async (req, res) => {
     try {
+        // Auto-complete any overdue transit fleets before returning data
+        await FirebaseHelpers.confirmArrivals();
+
         const fleets = await FirebaseHelpers.getFleets();
         const venatorStats = await FirebaseHelpers.getAvailableVenators();
-        
-        res.json({ 
+
+        res.json({
             fleets,
             venatorStats
         });
@@ -52,7 +55,11 @@ router.post('/', authenticateToken, requireAdmiralOrAdmin, async (req, res) => {
         if (isDev) {
             // Write directly to Firebase, bypassing the venator validation in FirebaseHelpers
             const fleets = await FirebaseHelpers.getFleets();
-            const nextId = Object.keys(fleets).length + 1;
+            // Use max existing numeric ID + 1 to avoid collisions after deletions
+            const existingNums = Object.keys(fleets)
+                .map(k => parseInt(k.replace('fleet-', '')) || 0)
+                .filter(n => n > 0);
+            const nextId = existingNums.length > 0 ? Math.max(...existingNums) + 1 : 1;
             const fleetId = `fleet-${nextId}`;
             await db().ref(`fleets/${fleetId}`).set(fleetPayload);
             fleet = { id: fleetId, ...fleetPayload };
@@ -64,6 +71,23 @@ router.post('/', authenticateToken, requireAdmiralOrAdmin, async (req, res) => {
     } catch (error) {
         console.error('Error creating fleet:', error);
         res.status(500).json({ error: error.message || 'Failed to create fleet' });
+    }
+});
+
+// Confirm arrival for fleets whose travel time has elapsed
+router.post('/confirm-arrival', authenticateToken, requireAdmiralOrAdmin, async (req, res) => {
+    try {
+        const { fleetIds } = req.body; // optional  if omitted, all overdue fleets are confirmed
+        const confirmed = await FirebaseHelpers.confirmArrivals(fleetIds || null);
+        res.json({
+            message: confirmed.length > 0
+                ? `${confirmed.length} fleet(s) arrived: ${confirmed.join(', ')}`
+                : 'No fleets ready to arrive yet',
+            confirmed
+        });
+    } catch (error) {
+        console.error('Error confirming arrivals:', error);
+        res.status(500).json({ error: error.message || 'Failed to confirm arrivals' });
     }
 });
 
@@ -95,11 +119,14 @@ router.post('/move', authenticateToken, requireAdmiralOrAdmin, async (req, res) 
     }
 });
 
+// Update fleet
 router.put('/:fleetId', authenticateToken, requireAdmiralOrAdmin, async (req, res) => {
     try {
         const { fleetId } = req.params;
         const { fleetName, commander, battalions, composition, description } = req.body;
 
+
+        
         console.log('UPDATE FLEET BODY:', req.body);
         console.log('DESCRIPTION:', description);
 
@@ -120,6 +147,7 @@ router.put('/:fleetId', authenticateToken, requireAdmiralOrAdmin, async (req, re
 
         const isDev = process.env.NODE_ENV !== 'production';
         if (isDev) {
+            // Bypass venator validation  write directly so 0-resource updates are allowed
             console.warn('[DEV] Skipping venator resource check for fleet update');
             await db().ref(`fleets/${fleetId}`).set({
                 ...updateData,
@@ -131,20 +159,9 @@ router.put('/:fleetId', authenticateToken, requireAdmiralOrAdmin, async (req, re
             await FirebaseHelpers.updateFleet(fleetId, updateData);
         }
 
-        // Log name change
-        if (fleetName && fleetName !== existingFleet.fleetName) {
-            await db().ref(`logs/${Date.now()}`).set({
-                type: 'fleet_rename',
-                by: req.user.email,
-                role: req.user.role,
-                from: existingFleet.fleetName,
-                to: fleetName,
-                target: fleetId,
-                timestamp: new Date().toISOString()
-            });
-        }
-
-        res.json({ message: 'Fleet updated successfully' });
+        res.json({ 
+            message: 'Fleet updated successfully'
+        });
     } catch (error) {
         console.error('Error updating fleet:', error);
         res.status(500).json({ error: error.message || 'Failed to update fleet' });

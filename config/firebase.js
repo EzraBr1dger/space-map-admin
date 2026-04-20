@@ -201,7 +201,11 @@ const FirebaseHelpers = {
     async addFleet(fleetData) {
         try {
             const fleets = await this.getFleets();
-            const nextId = Object.keys(fleets).length + 1;
+            // Use max existing numeric ID + 1 to avoid collisions after deletions
+            const existingNums = Object.keys(fleets)
+                .map(k => parseInt(k.replace('fleet-', '')) || 0)
+                .filter(n => n > 0);
+            const nextId = existingNums.length > 0 ? Math.max(...existingNums) + 1 : 1;
             const fleetId = `fleet-${nextId}`;
             
             // Validate enough venators available
@@ -250,6 +254,42 @@ const FirebaseHelpers = {
             return true;
         } catch (error) {
             console.error('Error updating fleet:', error);
+            throw error;
+        }
+    },
+
+    // Confirm arrivals for any fleet whose arrivalDate has passed.
+    // If fleetIds is provided, only those fleets are checked; otherwise all fleets.
+    async confirmArrivals(fleetIds = null) {
+        try {
+            const allFleets = await this.getFleets();
+            const now = new Date();
+            const updates = {};
+
+            const idsToCheck = fleetIds || Object.keys(allFleets);
+            for (const id of idsToCheck) {
+                const fleet = allFleets[id];
+                if (!fleet || !fleet.travelingTo) continue;
+                if (!fleet.arrivalDate) continue;
+                const arrival = new Date(fleet.arrivalDate);
+                if (now >= arrival) {
+                    updates[`fleets/${id}`] = {
+                        ...fleet,
+                        currentPlanet: fleet.travelingTo,
+                        travelingTo: null,
+                        departureDate: null,
+                        arrivalDate: null
+                    };
+                }
+            }
+
+            if (Object.keys(updates).length > 0) {
+                await db.ref().update(updates);
+                console.log(`✅ Confirmed arrival for ${Object.keys(updates).length} fleet(s)`);
+            }
+            return Object.keys(updates);
+        } catch (error) {
+            console.error('Error confirming arrivals:', error);
             throw error;
         }
     },
