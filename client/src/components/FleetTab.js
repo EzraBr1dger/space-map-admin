@@ -1296,8 +1296,6 @@ function FleetTab() {
                                                             <button
                                                                 onClick={() => assignBattalion(bat, otherFleetId, otherFleetName)}
                                                                 className={`ft-btn-sm ft-btn-bat-full ${otherFleetId ? 'ft-bsm-reassign' : 'ft-bsm-assign'}`}
-                                                                disabled={hasPending}
-                                                                title={hasPending ? 'Assignment in progress' : ''}
                                                             >
                                                                 {otherFleetId
                                                                     ? `${bat} — REASSIGN (in ${otherFleetName})`
