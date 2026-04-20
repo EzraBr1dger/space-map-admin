@@ -83,7 +83,7 @@ router.post('/', authenticateToken, async (req, res) => {
             robloxImageId: robloxImageId.trim(),
             announcementType,
             announcementText: announcementText.trim(),
-            createdBy: req.user.username
+            createdBy: req.user.email
         };
 
         const newAnnouncement = await FirebaseHelpers.createAnnouncement(announcementData);
@@ -151,7 +151,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
             robloxImageId: robloxImageId.trim(),
             announcementType,
             announcementText: announcementText.trim(),
-            modifiedBy: req.user.username
+            modifiedBy: req.user.email
         };
 
         await FirebaseHelpers.updateAnnouncement(announcementId, updateData);
