@@ -197,18 +197,15 @@ const FirebaseHelpers = {
         }
     },
 
-    // Add new fleet
     async addFleet(fleetData) {
         try {
             const fleets = await this.getFleets();
-            // Use max existing numeric ID + 1 to avoid collisions after deletions
             const existingNums = Object.keys(fleets)
                 .map(k => parseInt(k.replace('fleet-', '')) || 0)
                 .filter(n => n > 0);
             const nextId = existingNums.length > 0 ? Math.max(...existingNums) + 1 : 1;
             const fleetId = `fleet-${nextId}`;
             
-            // Validate enough venators available
             const venatorStats = await this.getAvailableVenators();
             if (fleetData.composition.venators > venatorStats.available) {
                 throw new Error(`Not enough Venators. Available: ${venatorStats.available}, Requested: ${fleetData.composition.venators}`);
