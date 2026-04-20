@@ -215,7 +215,7 @@ function FleetTab() {
             await api.post('/fleet', newFleet);
             showMessage('success', 'Fleet created successfully');
             setShowAddModal(false);
-            setNewFleet({ fleetName: '', commander: '', battalion: [], startingPlanet: 'Coruscant', composition: { venators: 0, frigates: 0 } });
+            setNewFleet({ fleetName: '', commander: '', battalions: [], startingPlanet: 'Coruscant', composition: { venators: 0, frigates: 0 } });
             await loadData();
         } catch (error) {
             showMessage('error', error.response?.data?.error || 'Failed to create fleet');
