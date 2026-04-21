@@ -807,7 +807,7 @@
     margin-top: 14px;
 }
 
-/* ── EDIT MODAL  TABBED LAYOUT ── */
+/*  EDIT MODAL  TABBED LAYOUT  */
 .ft-modal-wide {
     min-width: 860px;
     max-width: 1300px;
@@ -956,7 +956,7 @@
     border-bottom-color: #00c8ff;
 }
 
-/* ── MANAGE ASSETS SHARED BLOCK ── */
+/*  MANAGE ASSETS SHARED BLOCK  */
 .ft-asset-block {
     background: rgba(4, 8, 20, 0.6);
     border: 1px solid rgba(255, 255, 255, 0.06);
@@ -974,7 +974,7 @@
     margin-bottom: 10px;
 }
 
-/* ── VENATOR SECTION ── */
+/*  VENATOR SECTION  */
 .ft-venator-row {
     display: flex;
     align-items: center;
@@ -1068,7 +1068,7 @@
     font-size: 0.76rem !important;
 }
 
-/* ── BATTALION ASSIGN/REMOVE ROWS ── */
+/*  BATTALION ASSIGN/REMOVE ROWS  */
 .ft-bat-manage-row {
     display: flex;
     align-items: center;
@@ -1168,6 +1168,59 @@
     letter-spacing: 0.5px;
     padding: 8px 12px;
     margin-bottom: 12px;
+}
+
+/*  DEV TESTING UTILITIES  */
+.ft-dev-block {
+    margin-top: 10px;
+    padding: 8px 10px;
+    border: 1px dashed rgba(255, 193, 7, 0.3);
+    border-radius: 3px;
+    background: rgba(255, 193, 7, 0.04);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.ft-dev-block-inline {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.ft-dev-disclaimer {
+    color: rgba(255, 193, 7, 0.75);
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.ft-btn-dev {
+    background: rgba(255, 193, 7, 0.1);
+    color: #ffc107;
+    border: 1px solid rgba(255, 193, 7, 0.35);
+    border-radius: 2px;
+    padding: 5px 10px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    font-family: 'Courier New', Courier, monospace;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s;
+}
+
+.ft-btn-dev:hover:not(:disabled) {
+    background: rgba(255, 193, 7, 0.2);
+}
+
+.ft-btn-dev:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
 }
 
 /* LEGACY CLASS SUPPORT so nothing outside FleetTab breaks */
