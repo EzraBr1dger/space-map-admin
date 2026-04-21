@@ -546,7 +546,7 @@ function FleetTab() {
         }
     };
 
-    // DEV: immediately transport selected fleets without travel time or animation
+    // DEV Feature: immediately transport selected fleets without travel time or animation
     const devInstantTransport = async () => {
         if (selectedFleets.length === 0) { showMessage('error', 'No fleets selected'); return; }
         if (!destination) { showMessage('error', 'No destination selected'); return; }
